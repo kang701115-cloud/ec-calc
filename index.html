@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>양액 EC 계산기</title>
+  <style>
+    body {
+      font-family: 'Pretendard', sans-serif;
+      background-color: #f9fafb;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+    }
+    h1 {
+      color: #2a7cf7;
+      margin-bottom: 20px;
+    }
+    .box {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px 30px;
+      margin: 15px;
+      width: 320px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0 12px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+    button {
+      width: 100%;
+      background: #2a7cf7;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    button:hover {
+      background: #1e5fc1;
+    }
+    p.result {
+      font-weight: bold;
+      color: #444;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>양액 EC 계산기</h1>
+
+  <div class="box">
+    <h3>기능 A — 목표 EC ➜ 필요한 양액량</h3>
+    <label>목표 EC (mS/cm):</label>
+    <input type="number" id="targetEC" step="0.1" placeholder="예: 1.2">
+    <label>물의 양 (L):</label>
+    <input type="number" id="waterA" step="0.1" placeholder="예: 0.5">
+    <button onclick="calcA()">계산하기</button>
+    <p id="resultA" class="result"></p>
+  </div>
+
+  <div class="box">
+    <h3>기능 B — 양액량 ➜ 예상 EC</h3>
+    <label>양액 주입량 (µL):</label>
+    <input type="number" id="nutrientB" step="1" placeholder="예: 250">
+    <label>물의 양 (L):</label>
+    <input type="number" id="waterB" step="0.1" placeholder="예: 0.5">
+    <button onclick="calcB()">계산하기</button>
+    <p id="resultB" class="result"></p>
+  </div>
+
+  <script>
+    // 기준: 0.5L 물에 250µL 넣으면 EC 0.4 상승
+    const baseWater = 0.5;
+    const baseNutrient = 250;
+    const baseEC = 0.4;
+
+    // 기능 A: 목표 EC ➜ 필요한 양액량
+    function calcA() {
+      const targetEC = parseFloat(document.getElementById('targetEC').value);
+      const water = parseFloat(document.getElementById('waterA').value);
+      if (isNaN(targetEC) || isNaN(water) || targetEC <= 0 || water <= 0) {
+        document.getElementById('resultA').innerText = '값을 모두 올바르게 입력해주세요.';
+        return;
+      }
+      const nutrientNeeded = (targetEC / baseEC) * (water / baseWater) * baseNutrient;
+      document.getElementById('resultA').innerText =
+        `필요한 양액량: 약 ${nutrientNeeded.toFixed(1)} µL`;
+    }
+
+    // 기능 B: 양액량 ➜ 예상 EC
+    function calcB() {
+      const nutrient = parseFloat(document.getElementById('nutrientB').value);
+      const water = parseFloat(document.getElementById('waterB').value);
+      if (isNaN(nutrient) || isNaN(water) || nutrient <= 0 || water <= 0) {
+        document.getElementById('resultB').innerText = '값을 모두 올바르게 입력해주세요.';
+        return;
+      }
+      const expectedEC = (nutrient / baseNutrient) * (baseWater / water) * baseEC;
+      document.getElementById('resultB').innerText =
+        `예상 EC: 약 ${expectedEC.toFixed(2)} mS/cm`;
+    }
+  </script>
+</body>
+</html>
