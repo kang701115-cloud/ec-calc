@@ -2,7 +2,9 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; base-uri 'none'; form-action 'none'">
+  <!-- CSP에서 inline script 허용('unsafe-inline') 추가 -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>양액 EC 계산기</title>
   <style>
@@ -15,7 +17,7 @@
     }
     h1 {
       color: #007BFF;
-      font-size: 2.4rem; /* 제목 크게 */
+      font-size: 2.4rem;
       margin-bottom: 30px;
     }
     .card {
@@ -25,7 +27,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       max-width: 500px;
-      font-size: 1.2rem; /* 카드 안 글자 크기 */
+      font-size: 1.2rem;
       text-align: left;
     }
     .card h2 { margin: 0 0 8px }
@@ -59,8 +61,8 @@
       margin-top: 16px;
       font-weight: bold;
       color: #333;
-      font-size: 1.25rem; /* 결과값 크게 */
-      min-height: 1.6em;  /* 점프 방지 */
+      font-size: 1.25rem;
+      min-height: 1.6em;
     }
     .muted { color:#6b7280; font-size:.95rem; margin-top:6px }
     .error { color:#b91c1c }
@@ -110,7 +112,6 @@
       el.classList.toggle('error', isError);
     }
 
-    // 기능 A: 목표 EC 달성에 필요한 양액량 (µL 및 mL 안내)
     function calculateA() {
       const targetEC = parseFloat(document.getElementById('targetEC').value);
       const waterVolume = parseFloat(document.getElementById('waterVolumeA').value);
@@ -129,7 +130,6 @@
         return;
       }
 
-      // 비례 계산
       const nutrientNeeded = (targetEC / baseEC) * (baseNutrient * (waterVolume / baseWater)); // µL
       if (!Number.isFinite(nutrientNeeded) || nutrientNeeded < 0) {
         show(out, "계산할 수 없습니다. 입력값을 확인하세요.", true);
@@ -139,7 +139,6 @@
       show(out, `필요한 양액량: 약 ${fmt(nutrientNeeded,1)} µL (≈ ${fmt(mL,3)} mL)`);
     }
 
-    // 기능 B: 양액량(µL) → 예상 EC
     function calculateB() {
       const nutrientVolume = parseFloat(document.getElementById('nutrientVolume').value);
       const waterVolume = parseFloat(document.getElementById('waterVolumeB').value);
@@ -166,5 +165,6 @@
       show(out, `예상 EC: 약 ${fmt(expectedEC,2)} mS/cm`);
     }
   </script>
+
 </body>
 </html>
