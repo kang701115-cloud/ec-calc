@@ -2,75 +2,36 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <!-- CSP에서 inline script 허용('unsafe-inline') 추가 -->
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>양액 EC 계산기</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
-    h1 {
-      color: #007BFF;
-      font-size: 2.4rem;
-      margin-bottom: 30px;
-    }
-    .card {
-      background: white;
-      padding: 25px;
-      margin: 20px auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      max-width: 500px;
-      font-size: 1.2rem;
-      text-align: left;
-    }
-    .card h2 { margin: 0 0 8px }
-    label {
-      display: block;
-      margin-top: 20px;
-      font-weight: bold;
-      font-size: 1.1rem;
-    }
-    input {
-      width: 100%;
-      padding: 14px;
-      margin-top: 8px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1.2rem;
-    }
-    button {
-      margin-top: 20px;
-      padding: 14px 20px;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1.2rem;
-      width: 100%;
-    }
-    button:hover { background-color: #0056b3; }
-    .result {
-      margin-top: 16px;
-      font-weight: bold;
-      color: #333;
-      font-size: 1.25rem;
-      min-height: 1.6em;
-    }
-    .muted { color:#6b7280; font-size:.95rem; margin-top:6px }
-    .error { color:#b91c1c }
+    body{font-family:Arial,sans-serif;background-color:#f9f9f9;margin:0;padding:20px;text-align:center}
+    h1{color:#007BFF;font-size:2.4rem;margin-bottom:16px}
+    .toolbar{margin:0 auto 18px;max-width:500px;text-align:right}
+    .toolbar label{font-size:1rem;color:#374151;margin-right:8px}
+    .toolbar select{padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:1rem;background:#fff}
+    .card{background:#fff;padding:25px;margin:20px auto;border-radius:12px;box-shadow:0 4px 8px rgba(0,0,0,.1);max-width:500px;font-size:1.2rem;text-align:left}
+    .card h2{margin:0 0 8px}
+    label{display:block;margin-top:20px;font-weight:bold;font-size:1.1rem}
+    input{width:100%;padding:14px;margin-top:8px;border:1px solid #ccc;border-radius:8px;font-size:1.2rem}
+    button{margin-top:20px;padding:14px 20px;background:#007BFF;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1.2rem;width:100%}
+    button:hover{background:#0056b3}
+    .result{margin-top:16px;font-weight:bold;color:#333;font-size:1.25rem;min-height:1.6em}
+    .muted{color:#6b7280;font-size:.95rem;margin-top:6px}
+    .error{color:#b91c1c}
   </style>
 </head>
 <body>
-
   <h1>양액 EC 계산기</h1>
+
+  <!-- 결과 단위 토글 -->
+  <div class="toolbar">
+    <label for="unitSelect">결과 단위:</label>
+    <select id="unitSelect" aria-label="결과 단위 선택">
+      <option value="ul" selected>µL</option>
+      <option value="ml">mL</option>
+    </select>
+  </div>
 
   <div class="card">
     <h2>기능 A — 목표 EC ➝ 필요한 양액량</h2>
@@ -82,7 +43,7 @@
     <label for="waterVolumeA">물의 양 (L):</label>
     <input type="number" id="waterVolumeA" placeholder="예: 0.5" step="0.01" inputmode="decimal" min="0.01">
 
-    <button type="button" onclick="calculateA()">계산하기</button>
+    <button id="btnA" type="button">계산하기</button>
     <div class="result" id="resultA" aria-live="polite"></div>
   </div>
 
@@ -95,76 +56,10 @@
     <label for="waterVolumeB">물의 양 (L):</label>
     <input type="number" id="waterVolumeB" placeholder="예: 0.5" step="0.01" inputmode="decimal" min="0.01">
 
-    <button type="button" onclick="calculateB()">계산하기</button>
+    <button id="btnB" type="button">계산하기</button>
     <div class="result" id="resultB" aria-live="polite"></div>
   </div>
 
-  <script>
-    // 기준: 250 µL → 0.5 L 물 → EC +0.4
-    const baseNutrient = 250; // µL
-    const baseWater = 0.5;    // L
-    const baseEC = 0.4;       // mS/cm
-
-    const fmt = (n, d=2) => Number.isFinite(n) ? Number(n.toFixed(d)).toString() : "—";
-
-    function show(el, text, isError=false){
-      el.textContent = text;
-      el.classList.toggle('error', isError);
-    }
-
-    function calculateA() {
-      const targetEC = parseFloat(document.getElementById('targetEC').value);
-      const waterVolume = parseFloat(document.getElementById('waterVolumeA').value);
-      const out = document.getElementById('resultA');
-
-      if (!Number.isFinite(targetEC) || !Number.isFinite(waterVolume)) {
-        show(out, "값을 모두 입력하세요.", true);
-        return;
-      }
-      if (targetEC < 0) {
-        show(out, "목표 EC는 0 이상이어야 합니다.", true);
-        return;
-      }
-      if (waterVolume <= 0) {
-        show(out, "물의 양은 0보다 커야 합니다.", true);
-        return;
-      }
-
-      const nutrientNeeded = (targetEC / baseEC) * (baseNutrient * (waterVolume / baseWater)); // µL
-      if (!Number.isFinite(nutrientNeeded) || nutrientNeeded < 0) {
-        show(out, "계산할 수 없습니다. 입력값을 확인하세요.", true);
-        return;
-      }
-      const mL = nutrientNeeded / 1000;
-      show(out, `필요한 양액량: 약 ${fmt(nutrientNeeded,1)} µL (≈ ${fmt(mL,3)} mL)`);
-    }
-
-    function calculateB() {
-      const nutrientVolume = parseFloat(document.getElementById('nutrientVolume').value);
-      const waterVolume = parseFloat(document.getElementById('waterVolumeB').value);
-      const out = document.getElementById('resultB');
-
-      if (!Number.isFinite(nutrientVolume) || !Number.isFinite(waterVolume)) {
-        show(out, "값을 모두 입력하세요.", true);
-        return;
-      }
-      if (nutrientVolume <= 0) {
-        show(out, "양액 주입량은 0보다 커야 합니다.", true);
-        return;
-      }
-      if (waterVolume <= 0) {
-        show(out, "물의 양은 0보다 커야 합니다.", true);
-        return;
-      }
-
-      const expectedEC = (nutrientVolume / (baseNutrient * (waterVolume / baseWater))) * baseEC;
-      if (!Number.isFinite(expectedEC) || expectedEC < 0) {
-        show(out, "계산할 수 없습니다. 입력값을 확인하세요.", true);
-        return;
-      }
-      show(out, `예상 EC: 약 ${fmt(expectedEC,2)} mS/cm`);
-    }
-  </script>
-
+  <script src="script.js"></script>
 </body>
 </html>
