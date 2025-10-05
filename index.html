@@ -1,65 +1,255 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>양액 EC 계산기</title>
   <style>
-    body{font-family:Arial,sans-serif;background-color:#f9f9f9;margin:0;padding:20px;text-align:center}
-    h1{color:#007BFF;font-size:2.4rem;margin-bottom:16px}
-    .toolbar{margin:0 auto 18px;max-width:500px;text-align:right}
-    .toolbar label{font-size:1rem;color:#374151;margin-right:8px}
-    .toolbar select{padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:1rem;background:#fff}
-    .card{background:#fff;padding:25px;margin:20px auto;border-radius:12px;box-shadow:0 4px 8px rgba(0,0,0,.1);max-width:500px;font-size:1.2rem;text-align:left}
-    .card h2{margin:0 0 8px}
-    label{display:block;margin-top:20px;font-weight:bold;font-size:1.1rem}
-    input{width:100%;padding:14px;margin-top:8px;border:1px solid #ccc;border-radius:8px;font-size:1.2rem}
-    button{margin-top:20px;padding:14px 20px;background:#007BFF;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1.2rem;width:100%}
-    button:hover{background:#0056b3}
-    .result{margin-top:16px;font-weight:bold;color:#333;font-size:1.25rem;min-height:1.6em}
-    .muted{color:#6b7280;font-size:.95rem;margin-top:6px}
-    .error{color:#b91c1c}
+    :root{
+      --brand:#007BFF;
+      --brand-dark:#0056b3;
+      --card-w: 560px;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family: Arial, sans-serif;
+      background:#f9f9f9;
+      margin:0; padding:24px;
+      text-align:center;
+    }
+    h1{color:var(--brand); font-size:2.4rem; margin:0 0 24px}
+    .wrap{max-width:var(--card-w); margin:0 auto}
+    .card{
+      background:#fff; padding:24px; margin:18px auto;
+      border-radius:14px; box-shadow:0 6px 14px rgba(0,0,0,.08);
+      text-align:left; font-size:1.12rem;
+    }
+    .card h2{margin:0 0 12px; font-size:1.35rem; color:#222}
+    label{display:block; margin-top:16px; font-weight:700}
+    .row{display:flex; gap:12px}
+    .row > div{flex:1}
+    input, select{
+      width:100%; padding:14px; margin-top:8px;
+      border:1px solid #d7d7d7; border-radius:10px; font-size:1.1rem;
+      background:#fff;
+    }
+    .hint{font-size:.95rem; color:#666; margin-top:6px}
+    .btn{
+      margin-top:18px; padding:14px 18px; width:100%;
+      background:var(--brand); color:#fff; border:none;
+      border-radius:10px; cursor:pointer; font-size:1.15rem;
+    }
+    .btn:hover{background:var(--brand-dark)}
+    .btn-row{display:flex; gap:10px; margin-top:16px}
+    .btn-sub{flex:1; padding:12px 14px; border-radius:10px; border:1px solid #ddd; background:#fff; cursor:pointer; font-size:1rem}
+    .btn-sub:hover{border-color:#bbb}
+    .result{margin-top:14px; font-weight:700; color:#333; font-size:1.25rem}
+    .unit-toggle{display:flex; gap:10px; align-items:center; margin-top:10px}
+    .unit-toggle label{margin:0; font-weight:600}
+    .save-pill{
+      display:inline-flex; gap:8px; align-items:center; margin-top:10px;
+      background:#eef6ff; color:#134d9a; padding:8px 12px; border-radius:999px; font-size:.95rem;
+    }
+    @media (max-width:560px){
+      body{padding:18px}
+      h1{font-size:1.9rem}
+      .card{padding:18px}
+    }
   </style>
 </head>
 <body>
   <h1>양액 EC 계산기</h1>
+  <div class="wrap">
 
-  <!-- 결과 단위 토글 -->
-  <div class="toolbar">
-    <label for="unitSelect">결과 단위:</label>
-    <select id="unitSelect" aria-label="결과 단위 선택">
-      <option value="ul" selected>µL</option>
-      <option value="ml">mL</option>
-    </select>
+    <!-- 기준 설정 -->
+    <div class="card" id="baselineCard">
+      <h2>기준 설정</h2>
+      <div class="row">
+        <div>
+          <label for="baseNutrient">기준 양액량 (µL)</label>
+          <input type="number" id="baseNutrient" step="0.1" placeholder="예: 250">
+        </div>
+        <div>
+          <label for="baseWater">기준 물량 (L)</label>
+          <input type="number" id="baseWater" step="0.01" placeholder="예: 0.5">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="baseEC">기준 EC 증가량 (mS/cm)</label>
+          <input type="number" id="baseEC" step="0.01" placeholder="예: 0.4">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-sub" id="saveBaselineBtn">기준 저장</button>
+        <button class="btn-sub" id="resetBaselineBtn">기본값으로</button>
+      </div>
+      <div class="hint">예) “양액 250 µL → 물 0.5 L → EC +0.40” 형태로 네 세팅에 맞게 바꿔서 쓰면 계산식이 자동 반영돼.</div>
+      <div class="save-pill" id="saveStatus" style="display:none;">✅ 저장됨</div>
+    </div>
+
+    <!-- 기능 A -->
+    <div class="card">
+      <h2>기능 A — 목표 EC ➝ 필요한 양액량</h2>
+      <label for="targetEC">목표 EC (mS/cm)</label>
+      <input type="number" id="targetEC" step="0.01" placeholder="예: 1.2">
+      <label for="waterVolumeA">물의 양 (L)</label>
+      <input type="number" id="waterVolumeA" step="0.01" placeholder="예: 0.5">
+
+      <div class="unit-toggle">
+        <label>표시 단위:</label>
+        <select id="unitA">
+          <option value="uL">µL</option>
+          <option value="mL">mL</option>
+        </select>
+      </div>
+
+      <button class="btn" onclick="calculateA()">계산하기</button>
+      <div class="result" id="resultA"></div>
+    </div>
+
+    <!-- 기능 B -->
+    <div class="card">
+      <h2>기능 B — 양액량 ➝ 예상 EC</h2>
+      <label for="nutrientVolume">양액 주입량</label>
+      <div class="row">
+        <div>
+          <input type="number" id="nutrientVolume" step="0.1" placeholder="예: 250">
+        </div>
+        <div>
+          <select id="unitB">
+            <option value="uL">µL</option>
+            <option value="mL">mL</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="waterVolumeB">물의 양 (L)</label>
+      <input type="number" id="waterVolumeB" step="0.01" placeholder="예: 0.5">
+
+      <button class="btn" onclick="calculateB()">계산하기</button>
+      <div class="result" id="resultB"></div>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>기능 A — 목표 EC ➝ 필요한 양액량</h2>
-    <div class="muted">기준: 0.5 L 물 + 250 µL → EC +0.4 mS/cm</div>
+  <script>
+    // ---- 기본값 ----
+    const DEFAULTS = {
+      baseNutrient: 250, // µL
+      baseWater: 0.5,    // L
+      baseEC: 0.4        // mS/cm
+    };
 
-    <label for="targetEC">목표 EC (mS/cm):</label>
-    <input type="number" id="targetEC" placeholder="예: 1.20" step="0.01" inputmode="decimal" min="0">
+    // ---- 로딩 시 기준값 초기화 ----
+    function loadBaseline(){
+      const stored = JSON.parse(localStorage.getItem('ecBaseline')||'{}');
+      const baseN = stored.baseNutrient ?? DEFAULTS.baseNutrient;
+      const baseW = stored.baseWater ?? DEFAULTS.baseWater;
+      const baseE = stored.baseEC ?? DEFAULTS.baseEC;
+      document.getElementById('baseNutrient').value = baseN;
+      document.getElementById('baseWater').value = baseW;
+      document.getElementById('baseEC').value = baseE;
+    }
 
-    <label for="waterVolumeA">물의 양 (L):</label>
-    <input type="number" id="waterVolumeA" placeholder="예: 0.5" step="0.01" inputmode="decimal" min="0.01">
+    function getBaseline(){
+      const baseNutrient = parseFloat(document.getElementById('baseNutrient').value);
+      const baseWater = parseFloat(document.getElementById('baseWater').value);
+      const baseEC = parseFloat(document.getElementById('baseEC').value);
+      if([baseNutrient, baseWater, baseEC].some(v => isNaN(v) || v<=0)){
+        throw new Error('기준값을 올바르게 입력하세요.');
+      }
+      return {baseNutrient, baseWater, baseEC};
+    }
 
-    <button id="btnA" type="button">계산하기</button>
-    <div class="result" id="resultA" aria-live="polite"></div>
-  </div>
+    function saveBaseline(){
+      try{
+        const b = getBaseline();
+        localStorage.setItem('ecBaseline', JSON.stringify(b));
+        showSaved();
+      }catch(e){
+        alert(e.message);
+      }
+    }
 
-  <div class="card">
-    <h2>기능 B — 양액량 ➝ 예상 EC</h2>
+    function resetBaseline(){
+      document.getElementById('baseNutrient').value = DEFAULTS.baseNutrient;
+      document.getElementById('baseWater').value = DEFAULTS.baseWater;
+      document.getElementById('baseEC').value = DEFAULTS.baseEC;
+      saveBaseline();
+    }
 
-    <label for="nutrientVolume">양액 주입량 (µL):</label>
-    <input type="number" id="nutrientVolume" placeholder="예: 250" step="1" inputmode="numeric" min="1">
+    function showSaved(){
+      const pill = document.getElementById('saveStatus');
+      pill.style.display='inline-flex';
+      setTimeout(()=> pill.style.display='none', 1400);
+    }
 
-    <label for="waterVolumeB">물의 양 (L):</label>
-    <input type="number" id="waterVolumeB" placeholder="예: 0.5" step="0.01" inputmode="decimal" min="0.01">
+    // ---- 단위 헬퍼 ----
+    function toDisplay(value_uL, unit){ // µL→표시단위
+      if(unit==='mL') return (value_uL/1000).toFixed(3)+' mL';
+      return value_uL.toFixed(1)+' µL';
+    }
+    function toMicroLiter(value, unit){ // 표시단위→µL
+      return unit==='mL' ? value*1000 : value;
+    }
 
-    <button id="btnB" type="button">계산하기</button>
-    <div class="result" id="resultB" aria-live="polite"></div>
-  </div>
+    // ---- 계산식 ----
+    // 스케일링 가정: EC ∝ (양액량 / 물량), 기준점(baseline)으로 정규화
+    // A) 목표 EC 달성에 필요한 양액량(µL):
+    //   nutrientNeeded = (targetEC / baseEC) * (baseNutrient * (water / baseWater))
+    function calculateA(){
+      try{
+        const {baseNutrient, baseWater, baseEC} = getBaseline();
+        const targetEC = parseFloat(document.getElementById('targetEC').value);
+        const waterVolume = parseFloat(document.getElementById('waterVolumeA').value);
+        const unit = document.getElementById('unitA').value;
 
-  <script src="script.js"></script>
+        if(isNaN(targetEC) || isNaN(waterVolume) || targetEC<=0 || waterVolume<=0){
+          document.getElementById('resultA').innerText = '값을 모두 올바르게 입력하세요.';
+          return;
+        }
+
+        const nutrientNeeded_uL = (targetEC / baseEC) * (baseNutrient * (waterVolume / baseWater));
+        document.getElementById('resultA').innerText =
+          `필요한 양액량: ${toDisplay(nutrientNeeded_uL, unit)}`;
+      }catch(e){
+        document.getElementById('resultA').innerText = e.message;
+      }
+    }
+
+    // B) 양액 주입량으로 예상 EC:
+    //   expectedEC = ( (nutrient / (baseNutrient * (water / baseWater))) * baseEC )
+    function calculateB(){
+      try{
+        const {baseNutrient, baseWater, baseEC} = getBaseline();
+        const nutrientRaw = parseFloat(document.getElementById('nutrientVolume').value);
+        const unit = document.getElementById('unitB').value;
+        const waterVolume = parseFloat(document.getElementById('waterVolumeB').value);
+
+        if(isNaN(nutrientRaw) || isNaN(waterVolume) || nutrientRaw<=0 || waterVolume<=0){
+          document.getElementById('resultB').innerText = '값을 모두 올바르게 입력하세요.';
+          return;
+        }
+
+        const nutrient_uL = toMicroLiter(nutrientRaw, unit);
+        const expectedEC = (nutrient_uL / (baseNutrient * (waterVolume / baseWater))) * baseEC;
+
+        document.getElementById('resultB').innerText =
+          `예상 EC: 약 ${expectedEC.toFixed(2)} mS/cm`;
+      }catch(e){
+        document.getElementById('resultB').innerText = e.message;
+      }
+    }
+
+    // 이벤트 바인딩 & 초기화
+    document.getElementById('saveBaselineBtn').addEventListener('click', saveBaseline);
+    document.getElementById('resetBaselineBtn').addEventListener('click', resetBaseline);
+    window.addEventListener('load', ()=>{
+      loadBaseline();
+      // 기본 단위 프리셋
+      document.getElementById('unitA').value = 'uL';
+      document.getElementById('unitB').value = 'uL';
+    });
+  </script>
 </body>
 </html>
