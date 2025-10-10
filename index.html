@@ -43,7 +43,7 @@
     .btn-row{display:flex; gap:10px; margin-top:16px}
     .btn-sub{flex:1; padding:12px 14px; border-radius:10px; border:1px solid #ddd; background:#fff; cursor:pointer; font-size:1rem}
     .btn-sub:hover{border-color:#bbb}
-    .result{margin-top:14px; font-weight:700; color:#333; font-size:1.25rem}
+    .result{margin-top:14px; font-weight:700; color:#333; font-size:1.25rem; white-space:pre-line}
     .unit-toggle{display:flex; gap:10px; align-items:center; margin-top:10px}
     .unit-toggle label{margin:0; font-weight:600}
     .save-pill{
@@ -84,7 +84,7 @@
         <button class="btn-sub" id="saveBaselineBtn">기준 저장</button>
         <button class="btn-sub" id="resetBaselineBtn">기본값으로</button>
       </div>
-      <div class="hint">예) “양액 250 µL → 물 0.5 L → EC +0.75” 형태로 네 세팅에 맞게 바꿔서 쓰면 계산식이 자동 반영돼.</div>
+      <div class="hint">예) “양액 250 µL → 물 0.5 L → EC +0.75”</div>
       <div class="save-pill" id="saveStatus" style="display:none;">✅ 저장됨</div>
     </div>
 
@@ -95,7 +95,6 @@
       <input type="number" id="targetEC" step="0.01" placeholder="예: 1.2">
       <label for="waterVolumeA">물의 양 (L)</label>
       <input type="number" id="waterVolumeA" step="0.01" placeholder="예: 0.5">
-
       <div class="unit-toggle">
         <label>표시 단위:</label>
         <select id="unitA">
@@ -103,7 +102,6 @@
           <option value="mL">mL</option>
         </select>
       </div>
-
       <button class="btn" onclick="calculateA()">계산하기</button>
       <div class="result" id="resultA"></div>
     </div>
@@ -123,134 +121,35 @@
           </select>
         </div>
       </div>
-
       <label for="waterVolumeB">물의 양 (L)</label>
       <input type="number" id="waterVolumeB" step="0.01" placeholder="예: 0.5">
-
       <button class="btn" onclick="calculateB()">계산하기</button>
       <div class="result" id="resultB"></div>
     </div>
+
+    <!-- 기능 C -->
+    <div class="card">
+      <h2>기능 C — N:K 비율 ➝ 황산칼륨 수용액량</h2>
+      <label for="volumeA">A액 부피 (µL)</label>
+      <input type="number" id="volumeA" step="1" placeholder="예: 500">
+      <label for="volumeB">B액 부피 (µL)</label>
+      <input type="number" id="volumeB" step="1" placeholder="예: 500">
+      <label for="targetRatio">목표 N:K 비율 (예: 1.0)</label>
+      <input type="number" id="targetRatio" step="0.01" placeholder="예: 1.2">
+      <button class="btn" onclick="calculateC()">계산하기</button>
+      <div class="result" id="resultC"></div>
+    </div>
+
   </div>
 
   <script>
-    // ---- 기본값 ----
     const DEFAULTS = {
-      baseNutrient: 250, // µL
-      baseWater: 0.5,    // L
-      baseEC: 0.4        // mS/cm
+      baseNutrient: 250,
+      baseWater: 0.5,
+      baseEC: 0.4
     };
 
-    // ---- 로딩 시 기준값 초기화 ----
     function loadBaseline(){
       const stored = JSON.parse(localStorage.getItem('ecBaseline')||'{}');
-      const baseN = stored.baseNutrient ?? DEFAULTS.baseNutrient;
-      const baseW = stored.baseWater ?? DEFAULTS.baseWater;
-      const baseE = stored.baseEC ?? DEFAULTS.baseEC;
-      document.getElementById('baseNutrient').value = baseN;
-      document.getElementById('baseWater').value = baseW;
-      document.getElementById('baseEC').value = baseE;
-    }
-
-    function getBaseline(){
-      const baseNutrient = parseFloat(document.getElementById('baseNutrient').value);
-      const baseWater = parseFloat(document.getElementById('baseWater').value);
-      const baseEC = parseFloat(document.getElementById('baseEC').value);
-      if([baseNutrient, baseWater, baseEC].some(v => isNaN(v) || v<=0)){
-        throw new Error('기준값을 올바르게 입력하세요.');
-      }
-      return {baseNutrient, baseWater, baseEC};
-    }
-
-    function saveBaseline(){
-      try{
-        const b = getBaseline();
-        localStorage.setItem('ecBaseline', JSON.stringify(b));
-        showSaved();
-      }catch(e){
-        alert(e.message);
-      }
-    }
-
-    function resetBaseline(){
-      document.getElementById('baseNutrient').value = DEFAULTS.baseNutrient;
-      document.getElementById('baseWater').value = DEFAULTS.baseWater;
-      document.getElementById('baseEC').value = DEFAULTS.baseEC;
-      saveBaseline();
-    }
-
-    function showSaved(){
-      const pill = document.getElementById('saveStatus');
-      pill.style.display='inline-flex';
-      setTimeout(()=> pill.style.display='none', 1400);
-    }
-
-    // ---- 단위 헬퍼 ----
-    function toDisplay(value_uL, unit){ // µL→표시단위
-      if(unit==='mL') return (value_uL/1000).toFixed(3)+' mL';
-      return value_uL.toFixed(1)+' µL';
-    }
-    function toMicroLiter(value, unit){ // 표시단위→µL
-      return unit==='mL' ? value*1000 : value;
-    }
-
-    // ---- 계산식 ----
-    // 스케일링 가정: EC ∝ (양액량 / 물량), 기준점(baseline)으로 정규화
-    // A) 목표 EC 달성에 필요한 양액량(µL):
-    //   nutrientNeeded = (targetEC / baseEC) * (baseNutrient * (water / baseWater))
-    function calculateA(){
-      try{
-        const {baseNutrient, baseWater, baseEC} = getBaseline();
-        const targetEC = parseFloat(document.getElementById('targetEC').value);
-        const waterVolume = parseFloat(document.getElementById('waterVolumeA').value);
-        const unit = document.getElementById('unitA').value;
-
-        if(isNaN(targetEC) || isNaN(waterVolume) || targetEC<=0 || waterVolume<=0){
-          document.getElementById('resultA').innerText = '값을 모두 올바르게 입력하세요.';
-          return;
-        }
-
-        const nutrientNeeded_uL = (targetEC / baseEC) * (baseNutrient * (waterVolume / baseWater));
-        document.getElementById('resultA').innerText =
-          `필요한 양액량: ${toDisplay(nutrientNeeded_uL, unit)}`;
-      }catch(e){
-        document.getElementById('resultA').innerText = e.message;
-      }
-    }
-
-    // B) 양액 주입량으로 예상 EC:
-    //   expectedEC = ( (nutrient / (baseNutrient * (water / baseWater))) * baseEC )
-    function calculateB(){
-      try{
-        const {baseNutrient, baseWater, baseEC} = getBaseline();
-        const nutrientRaw = parseFloat(document.getElementById('nutrientVolume').value);
-        const unit = document.getElementById('unitB').value;
-        const waterVolume = parseFloat(document.getElementById('waterVolumeB').value);
-
-        if(isNaN(nutrientRaw) || isNaN(waterVolume) || nutrientRaw<=0 || waterVolume<=0){
-          document.getElementById('resultB').innerText = '값을 모두 올바르게 입력하세요.';
-          return;
-        }
-
-        const nutrient_uL = toMicroLiter(nutrientRaw, unit);
-        const expectedEC = (nutrient_uL / (baseNutrient * (waterVolume / baseWater))) * baseEC;
-
-        document.getElementById('resultB').innerText =
-          `예상 EC: 약 ${expectedEC.toFixed(2)} mS/cm`;
-      }catch(e){
-        document.getElementById('resultB').innerText = e.message;
-      }
-    }
-
-    // 이벤트 바인딩 & 초기화
-    document.getElementById('saveBaselineBtn').addEventListener('click', saveBaseline);
-    document.getElementById('resetBaselineBtn').addEventListener('click', resetBaseline);
-    window.addEventListener('load', ()=>{
-      loadBaseline();
-      // 기본 단위 프리셋
-      document.getElementById('unitA').value = 'uL';
-      document.getElementById('unitB').value = 'uL';
-    });
-  </script>
-</body>
-</html>
-
+      document.getElementById('baseNutrient').value = stored.baseNutrient ?? DEFAULTS.baseNutrient;
+      document.getElement
