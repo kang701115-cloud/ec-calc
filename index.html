@@ -3,333 +3,451 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액 EC 계산기</title>
+<title>양액 배합 계산기 — 기능 D 전용</title>
 <style>
-:root{ --brand:#007BFF; --brand-dark:#0056b3; --card-w:560px; }
+:root{ --brand:#007BFF; --brand-dark:#0056b3; --card-w: 680px; }
 *{box-sizing:border-box}
-body{font-family:Arial, sans-serif;background:#f9f9f9;margin:0;padding:24px;text-align:center}
-h1{color:var(--brand);font-size:2.4rem;margin:0 0 24px}
-.wrap{max-width:var(--card-w);margin:0 auto}
-.card{background:#fff;padding:24px;margin:18px auto;border-radius:14px;box-shadow:0 6px 14px rgba(0,0,0,.08);text-align:left;font-size:1.12rem}
-.card h2{margin:0 0 12px;font-size:1.35rem;color:#222}
-label{display:block;margin-top:16px;font-weight:700}
-.row{display:flex;gap:12px}
-.row > div{flex:1}
-input, select{width:100%;padding:14px;margin-top:8px;border:1px solid #d7d7d7;border-radius:10px;font-size:1.1rem;background:#fff}
-.hint{font-size:.95rem;color:#666;margin-top:6px}
-.btn{margin-top:18px;padding:14px 18px;width:100%;background:var(--brand);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:1.15rem}
+body{ font-family: Arial, sans-serif; background:#f7f8fa; margin:0; padding:24px; text-align:center; }
+h1{color:var(--brand); font-size:2.2rem; margin:0 0 18px}
+.wrap{max-width:var(--card-w); margin:0 auto}
+.card{ background:#fff; padding:20px; margin:16px auto; border-radius:14px; box-shadow:0 6px 16px rgba(0,0,0,.06); text-align:left; font-size:1.06rem; }
+.card h2{margin:0 0 10px; font-size:1.25rem; color:#222}
+label{display:block; margin-top:12px; font-weight:700}
+.row{display:flex; gap:12px; flex-wrap:wrap}
+.row > div{flex:1 1 200px}
+input, select{ width:100%; padding:12px; margin-top:6px; border:1px solid #d7d7d7; border-radius:10px; font-size:1.05rem; background:#fff; }
+small.hint{display:block; font-size:.9rem; color:#666; margin-top:6px}
+.btn{ margin-top:16px; padding:13px 16px; width:100%; background:var(--brand); color:#fff; border:none; border-radius:10px; cursor:pointer; font-size:1.08rem; }
 .btn:hover{background:var(--brand-dark)}
-.btn-row{display:flex;gap:10px;margin-top:16px}
-.btn-sub{flex:1;padding:12px 14px;border-radius:10px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:1rem}
-.btn-sub:hover{border-color:#bbb}
-.result{margin-top:14px;font-weight:700;color:#333;font-size:1.25rem;white-space:pre-line;word-break:keep-all}
-.unit-toggle{display:flex;gap:10px;align-items:center;margin-top:10px}
-.unit-toggle label{margin:0;font-weight:600}
-.save-pill{display:inline-flex;gap:8px;align-items:center;margin-top:10px;background:#eef6ff;color:#134d9a;padding:8px 12px;border-radius:999px;font-size:.95rem}
-.kbd{display:inline-block;padding:2px 6px;border:1px solid #ddd;border-radius:6px;background:#fafafa;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem}
-@media (max-width:560px){ body{padding:18px} h1{font-size:1.9rem} .card{padding:18px} }
+.result{margin-top:14px; font-weight:700; color:#222; font-size:1.18rem; white-space:pre-line; word-break:keep-all}
+.meta{font-size:.96rem; color:#333; white-space:pre-line; margin-top:8px}
+.kbd{display:inline-block; padding:2px 6px; border:1px solid #ddd; border-radius:6px; background:#fafafa; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.95rem}
+.pill{display:inline-flex; gap:8px; align-items:center; margin-top:8px; background:#eef6ff; color:#134d9a; padding:8px 12px; border-radius:999px; font-size:.92rem}
+hr.sep{border:none; border-top:1px solid #eee; margin:14px 0}
+details{margin-top:10px}
+details > summary{cursor:pointer; user-select:none; padding:8px 10px; background:#f0f4ff; border:1px solid #d9e2ff; border-radius:10px; color:#274690; font-weight:700}
+.details-body{padding:10px 2px; font-size:.98rem; color:#333; white-space:pre-line}
+.bad{color:#b00020; font-weight:700}
+.ok{color:#0a7a0a; font-weight:700}
+.grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+.footer{font-size:.9rem; color:#666; margin-top:16px}
+@media (max-width:720px){ .grid-3{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
-<h1>양액 EC 계산기</h1>
+<h1>양액 배합 계산기 (기능 D)</h1>
 <div class="wrap">
 
-  <!-- 기준 설정 -->
-  <div class="card" id="baselineCard">
-    <h2>기준 설정</h2>
-    <div class="row">
-      <div>
-        <label for="baseNutrient">기준 양액량 (µL)</label>
-        <input type="number" id="baseNutrient" step="0.1" placeholder="예: 250">
-      </div>
-      <div>
-        <label for="baseWater">기준 물량 (L)</label>
-        <input type="number" id="baseWater" step="0.01" placeholder="예: 0.5">
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label for="baseEC">기준 EC 증가량 (mS/cm)</label>
-        <input type="number" id="baseEC" step="0.01" placeholder="예: 0.40">
-      </div>
-      <div>
-        <label for="globalDensity">밀도 (g/cm³)</label>
-        <input type="number" id="globalDensity" step="0.001" placeholder="예: 1.21">
-      </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn-sub" id="saveBaselineBtn" onclick="saveBaseline()">기준 저장</button>
-      <button class="btn-sub" id="resetBaselineBtn" onclick="resetBaseline()">기본값으로</button>
-    </div>
-    <div class="hint">
-      예) “양액 <span class="kbd">250 µL</span> → 물 <span class="kbd">0.5 L</span> → EC +<span class="kbd">0.40</span>”, 밀도 <span class="kbd">1.21</span>
-    </div>
-    <div class="save-pill" id="saveStatus" style="display:none;">✅ 저장됨</div>
-  </div>
-
-  <!-- 기능 A -->
   <div class="card">
-    <h2>기능 A — 목표 EC ➝ 필요한 양액량</h2>
-    <label for="targetEC">목표 EC (mS/cm)</label>
-    <input type="number" id="targetEC" step="0.01" placeholder="예: 1.20">
-    <label for="waterVolumeA">물의 양 (L)</label>
-    <input type="number" id="waterVolumeA" step="0.01" placeholder="예: 0.50">
-    <div class="unit-toggle">
-      <label>표시 단위:</label>
-      <select id="unitA">
-        <option value="uL">µL</option>
-        <option value="mL">mL</option>
-      </select>
+    <h2>기본 입력</h2>
+    <div class="row">
+      <div>
+        <label for="waterL">물의 양 (L)</label>
+        <input type="number" id="waterL" step="0.01" placeholder="예: 1.00" value="1.00">
+        <small class="hint">EC 증분(dE)은 “물 1 L 기준” 수치야. 물 양이 다르면 내부에서 자동 스케일됨.</small>
+      </div>
+      <div>
+        <label for="targetEC">목표 EC (mS/cm)</label>
+        <input type="number" id="targetEC" step="0.01" placeholder="예: 1.20">
+      </div>
+      <div>
+        <label for="totalAdd">총 주입 부피 V_add (µL)</label>
+        <input type="number" id="totalAdd" step="1" placeholder="예: 500">
+      </div>
     </div>
-    <button class="btn" onclick="calculateA()">계산하기</button>
-    <div class="result" id="resultA"></div>
   </div>
 
-  <!-- 기능 B -->
   <div class="card">
-    <h2>기능 B — 양액량 ➝ 예상 EC</h2>
-    <label for="nutrientVolume">양액 주입량</label>
+    <h2>1 L 기준 EC 증분 입력 (250 µL 투입 시)</h2>
     <div class="row">
-      <div><input type="number" id="nutrientVolume" step="0.1" placeholder="예: 250"></div>
       <div>
-        <select id="unitB">
-          <option value="uL">µL</option>
-          <option value="mL">mL</option>
-        </select>
+        <label for="dEA">A 250 µL → EC 증가 (mS/cm)</label>
+        <input type="number" id="dEA" step="0.01" placeholder="예: 0.40">
+      </div>
+      <div>
+        <label for="dEB">B 250 µL → EC 증가 (mS/cm)</label>
+        <input type="number" id="dEB" step="0.01" placeholder="예: 0.40">
+      </div>
+      <div>
+        <label for="dEK">10% K₂SO₄ 250 µL → EC 증가 (mS/cm)</label>
+        <input type="number" id="dEK" step="0.01" placeholder="예: 0.05">
       </div>
     </div>
-    <label for="waterVolumeB">물의 양 (L)</label>
-    <input type="number" id="waterVolumeB" step="0.01" placeholder="예: 0.50">
-    <button class="btn" onclick="calculateB()">계산하기</button>
-    <div class="result" id="resultB"></div>
   </div>
 
-  <!-- 기능 C -->
   <div class="card">
-    <h2>기능 C — K:N 비 맞추기 (10% K₂SO₄ 보정)</h2>
+    <h2>조성 비와 밀도</h2>
     <div class="row">
       <div>
-        <label for="volA">A액 부피 (µL)</label>
-        <input type="number" id="volA" step="0.1" placeholder="예: 120">
+        <label for="tK">목표 비 K 부분</label>
+        <input type="number" id="tK" step="0.01" placeholder="예: 1">
       </div>
       <div>
-        <label for="volB">B액 부피 (µL)</label>
-        <input type="number" id="volB" step="0.1" placeholder="예: 130">
+        <label for="tN">목표 비 N 부분</label>
+        <input type="number" id="tN" step="0.01" placeholder="예: 1">
       </div>
     </div>
     <div class="row">
       <div>
-        <label for="targetK">목표 비 — K 부분</label>
-        <input type="number" id="targetK" step="0.01" placeholder="예: 1">
+        <label for="rhoA">A 밀도 (g/mL = mg/µL)</label>
+        <input type="number" id="rhoA" step="0.001" value="1.21">
       </div>
       <div>
-        <label for="targetN">목표 비 — N 부분</label>
-        <input type="number" id="targetN" step="0.01" placeholder="예: 1">
+        <label for="rhoB">B 밀도 (g/mL = mg/µL)</label>
+        <input type="number" id="rhoB" step="0.001" value="1.21">
+      </div>
+      <div>
+        <label for="rhoK">10% K₂SO₄ 밀도 (가정)</label>
+        <input type="number" id="rhoK" step="0.001" value="1.00">
       </div>
     </div>
-    <div class="hint">
-      가정: 혼합물 100 mg당 K 4.25 mg, N 5.75 mg(고정).<br>
-      10 wt% K₂SO₄ 용액으로 K만 보충해 목표 K:N 비에 맞춤(N은 증가 X).
-    </div>
-    <button class="btn" onclick="calculateC()">필요한 10% K₂SO₄ 용액 계산</button>
-    <div class="result" id="resultC"></div>
+    <small class="hint">
+      혼합물 조성(질량 기준): 100 mg당 K 4.25 mg, N 5.75 mg로 고정. K₂SO₄ 용액의 K 질량비는 약 0.0448 (10 wt% × K₂SO₄ 내 K 비율)로 사용.
+    </small>
   </div>
 
+  <div class="card">
+    <button class="btn" id="btnCalc">계산하기</button>
+    <div class="result" id="result"></div>
+    <hr class="sep">
+    <div class="meta" id="meta"></div>
+
+    <details>
+      <summary>자세히 보기 (가정·계산식·대입값)</summary>
+      <div class="details-body" id="debugBox"></div>
+    </details>
+
+    <div class="pill">ℹ️ 가정: EC는 “주입량/물량”에 선형, 조성은 질량 기준으로 선형. 필요 시 네가 직접 잰 수치로 보정해서 쓰면 돼.</div>
+  </div>
+
+  <div class="footer">
+    입력값은 브라우저에 자동 저장됨(localStorage). 새로고침해도 유지돼.
+  </div>
 </div>
 
 <script>
 "use strict";
 
-// ===== 상수/기본값 =====
-const DEFAULTS = {
-  baseNutrient: 250, // µL
-  baseWater: 0.5,    // L
-  baseEC: 0.40,      // mS/cm
-  density: 1.21      // g/mL(=g/cm3). 1 g/mL = 1 mg/µL
-};
-
-// 혼합물 조성(질량 기준): 100 mg당
-const K_PER_100MG = 4.25;  // mg
-const N_PER_100MG = 5.75;  // mg
-
-// K2SO4의 K 질량분율 (정확 원자량 사용)
+// ----- 상수(화학량) -----
 const ATOMIC = { K: 39.0983, S: 32.065, O: 15.999 };
-const M_K2SO4 = 2*ATOMIC.K + ATOMIC.S + 4*ATOMIC.O;         // g/mol
-const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4;          // ≈ 0.448
-const K_MASS_FRAC_IN_10WT = 0.10 * MASSFRAC_K_IN_K2SO4;      // ≈ 0.0448 (용액 전체 대비 K)
+const M_K2SO4 = 2*ATOMIC.K + ATOMIC.S + 4*ATOMIC.O; // g/mol
+const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4; // ≈ 0.448
+const K_MASS_FRAC_IN_10WT = 0.10 * MASSFRAC_K_IN_K2SO4; // ≈ 0.0448 (용액 전체 대비 K 질량분율)
 
-// ===== 로컬 스토리지 =====
-function loadBaseline(){
-  const stored = JSON.parse(localStorage.getItem("ecBaseline") || "{}");
-  const baseN = (stored.baseNutrient ?? DEFAULTS.baseNutrient);
-  const baseW = (stored.baseWater    ?? DEFAULTS.baseWater);
-  const baseE = (stored.baseEC       ?? DEFAULTS.baseEC);
-  const dens  = (stored.density      ?? DEFAULTS.density);
+// ----- 로컬 스토리지 키 -----
+const KEY = "mixD_inputs_v1";
 
-  document.getElementById("baseNutrient").value = baseN;
-  document.getElementById("baseWater").value    = baseW;
-  document.getElementById("baseEC").value       = baseE;
-  document.getElementById("globalDensity").value= dens;
-
-  // 기본 단위 프리셋
-  const unitA = document.getElementById("unitA");
-  const unitB = document.getElementById("unitB");
-  if(unitA) unitA.value = "uL";
-  if(unitB) unitB.value = "uL";
+// ----- 유틸 -----
+function saveInputs(){
+  const data = {
+    waterL: getNum("waterL"),
+    targetEC: getNum("targetEC"),
+    totalAdd: getNum("totalAdd"),
+    dEA: getNum("dEA"),
+    dEB: getNum("dEB"),
+    dEK: getNum("dEK"),
+    tK: getNum("tK"),
+    tN: getNum("tN"),
+    rhoA: getNum("rhoA"),
+    rhoB: getNum("rhoB"),
+    rhoK: getNum("rhoK"),
+  };
+  localStorage.setItem(KEY, JSON.stringify(data));
 }
-
-function getBaseline(){
-  const baseNutrient = parseFloat(document.getElementById("baseNutrient").value);
-  const baseWater    = parseFloat(document.getElementById("baseWater").value);
-  const baseEC       = parseFloat(document.getElementById("baseEC").value);
-  const density      = parseFloat(document.getElementById("globalDensity").value);
-
-  if([baseNutrient, baseWater, baseEC, density].some(v => isNaN(v) || v<=0)){
-    throw new Error("기준값(양액량·물량·EC·밀도)을 올바르게 입력하세요.");
-  }
-  return { baseNutrient, baseWater, baseEC, density };
-}
-
-function saveBaseline(){
+function loadInputs(){
+  const raw = localStorage.getItem(KEY);
+  if(!raw) return;
   try{
-    const b = getBaseline();
-    localStorage.setItem("ecBaseline", JSON.stringify(b));
-    showSaved();
-  }catch(e){
-    alert(e.message);
+    const d = JSON.parse(raw);
+    for(const k of Object.keys(d)){
+      const el = document.getElementById(k);
+      if(el && typeof d[k] === "number" && !Number.isNaN(d[k])) el.value = d[k];
+    }
+  }catch(e){}
+}
+function getNum(id){
+  const v = parseFloat(document.getElementById(id).value);
+  return Number.isFinite(v) ? v : NaN;
+}
+
+// ----- 핵심 계산 -----
+function calculate(){
+  // 입력 읽기
+  const waterL  = getNum("waterL");    // L
+  const ECt     = getNum("targetEC");  // mS/cm
+  const Vadd    = getNum("totalAdd");  // µL
+
+  const dEA     = getNum("dEA");       // mS/cm (250 µL in 1 L)
+  const dEB     = getNum("dEB");       // mS/cm
+  const dEK     = getNum("dEK");       // mS/cm
+
+  const tK      = getNum("tK");
+  const tN      = getNum("tN");
+
+  const rhoA    = getNum("rhoA");      // mg/µL
+  const rhoB    = getNum("rhoB");      // mg/µL
+  const rhoK    = getNum("rhoK");      // mg/µL (가정)
+
+  const out = document.getElementById("result");
+  const meta = document.getElementById("meta");
+  const dbg  = document.getElementById("debugBox");
+  out.textContent = "";
+  meta.textContent = "";
+  dbg.textContent  = "";
+
+  // 유효성
+  if([waterL, ECt, Vadd, dEA, dEB, dEK, tK, tN, rhoA, rhoB, rhoK].some(v => !Number.isFinite(v) || v < 0)){
+    out.innerHTML = `<span class="bad">값을 모두 올바르게 입력해줘.</span>`;
+    return;
   }
-}
-
-function resetBaseline(){
-  document.getElementById("baseNutrient").value = DEFAULTS.baseNutrient;
-  document.getElementById("baseWater").value    = DEFAULTS.baseWater;
-  document.getElementById("baseEC").value       = DEFAULTS.baseEC;
-  document.getElementById("globalDensity").value= DEFAULTS.density;
-  saveBaseline();
-}
-
-function showSaved(){
-  const pill = document.getElementById("saveStatus");
-  pill.style.display = "inline-flex";
-  setTimeout(()=> pill.style.display = "none", 1400);
-}
-
-// ===== 단위 헬퍼 =====
-function toDisplay_uL(value_uL, unit){
-  if(unit === "mL") return (value_uL/1000).toFixed(3) + " mL";
-  return value_uL.toFixed(1) + " µL";
-}
-function toMicroLiter(value, unit){
-  return unit === "mL" ? value*1000 : value;
-}
-
-// ===== 기능 A =====
-// nutrientNeeded_uL = (targetEC / baseEC) * (baseNutrient * (water / baseWater))
-function calculateA(){
-  try{
-    const { baseNutrient, baseWater, baseEC } = getBaseline();
-    const targetEC    = parseFloat(document.getElementById("targetEC").value);
-    const waterVolume = parseFloat(document.getElementById("waterVolumeA").value);
-    const unit        = document.getElementById("unitA").value;
-
-    if(isNaN(targetEC) || isNaN(waterVolume) || targetEC<=0 || waterVolume<=0){
-      document.getElementById("resultA").innerText = "값을 모두 올바르게 입력하세요.";
-      return;
-    }
-    const nutrientNeeded_uL = (targetEC / baseEC) * (baseNutrient * (waterVolume / baseWater));
-    document.getElementById("resultA").innerText = `필요한 양액량: ${toDisplay_uL(nutrientNeeded_uL, unit)}`;
-  }catch(e){
-    document.getElementById("resultA").innerText = e.message;
+  if(waterL === 0){
+    out.innerHTML = `<span class="bad">물의 양은 0일 수 없어.</span>`;
+    return;
   }
-}
-
-// ===== 기능 B =====
-// expectedEC = (nutrient / (baseNutrient * (water / baseWater))) * baseEC
-function calculateB(){
-  try{
-    const { baseNutrient, baseWater, baseEC } = getBaseline();
-    const nutrientRaw = parseFloat(document.getElementById("nutrientVolume").value);
-    const unit        = document.getElementById("unitB").value;
-    const waterVolume = parseFloat(document.getElementById("waterVolumeB").value);
-
-    if(isNaN(nutrientRaw) || isNaN(waterVolume) || nutrientRaw<=0 || waterVolume<=0){
-      document.getElementById("resultB").innerText = "값을 모두 올바르게 입력하세요.";
-      return;
-    }
-    const nutrient_uL = toMicroLiter(nutrientRaw, unit);
-    const expectedEC  = (nutrient_uL / (baseNutrient * (waterVolume / baseWater))) * baseEC;
-    document.getElementById("resultB").innerText = `예상 EC: 약 ${expectedEC.toFixed(2)} mS/cm`;
-  }catch(e){
-    document.getElementById("resultB").innerText = e.message;
+  if(tK === 0 || tN === 0){
+    out.innerHTML = `<span class="bad">목표 비의 각 항은 0보다 커야 해.</span>`;
+    return;
   }
-}
 
-// ===== 기능 C =====
-// 1) A,B 합 부피(µL) → 질량(mg): mass_total_mg = total_uL * density  (density[g/mL] = mg/µL)
-// 2) 초기 K0,N0 (mg): K0 = mass*4.25%, N0 = mass*5.75%
-// 3) 목표비 r = (K_target/N_target) = targetK/targetN → ΔK = r*N0 - K0 (≤0 이면 0)
-// 4) 10 wt% K2SO4 용액의 K 질량분율 = K_MASS_FRAC_IN_10WT ≈ 0.0448
-//    필요한 용액 질량 m_sol = ΔK / 0.0448 (mg)
-// 5) 부피(µL) = m_sol / density
-function calculateC(){
-  try{
-    const { density } = getBaseline(); // g/mL == mg/µL
-    const volA = parseFloat(document.getElementById("volA").value);
-    const volB = parseFloat(document.getElementById("volB").value);
-    const tK   = parseFloat(document.getElementById("targetK").value);
-    const tN   = parseFloat(document.getElementById("targetN").value);
+  // 1) 물 양 스케일 반영: 단위 기울기(µL당 EC)
+  //   alpha = (dEA/250) / waterL, beta = (dEB/250) / waterL, gamma = (dEK/250) / waterL
+  const alpha = (dEA / 250) / waterL;
+  const beta  = (dEB / 250) / waterL;
+  const gamma = (dEK / 250) / waterL;
 
-    if([volA, volB, tK, tN].some(v => isNaN(v) || v < 0)){
-      document.getElementById("resultC").innerText = "값을 모두 올바르게 입력하세요.";
-      return;
-    }
-    if(tK <= 0 || tN <= 0){
-      document.getElementById("resultC").innerText = "목표 비의 각 항은 0보다 커야 합니다.";
-      return;
-    }
+  // 2) K:N 목표 비를 맞추기 위해 필요한 K2SO4 용액량 먼저 추정
+  //   A,B 합부피를 S0라고 두면, A,B 질량 = vA*rhoA + vB*rhoB
+  //   하지만 vA,vB를 아직 몰라서, 일단 vK를 모르는 상태에선 직접 못 구함.
+  //   트릭: vK는 최종적으로 vA+vB=S=Vadd-vK에 의해 결정되므로,
+  //   S를 S=Vadd-vK라고 두고 K,N을 S로 표현해 vK를 먼저 구한다.
+  //
+  //   S = Vadd - vK
+  //   A,B 질량(mg) = vA*rhoA + vB*rhoB = (rhoA*vA + rhoB*vB)
+  //   평균 밀도로 단순화하지 말고, 우선 "A,B 비율을 아직 모른다" → 안전한 근사로 rhoAB를 동일로 가정하는 대신
+  //   여기서는 A와 B의 밀도가 동일(1.21)이라는 네 전제에 맞춰 rhoA==rhoB라면
+  //   질량 = (vA+vB)*rhoA = S * rhoA 로 정확히 표현 가능.
+  //
+  //   네가 준 전제는 A=1.21, B=1.21 이므로, 이 경우 질량 = S * 1.21 이 됨.
+  //   만약 rhoA!=rhoB로 바꾸면 S만으론 정확치 않다(그땐 A,B를 같이 풀어야 함).
+  //   여기서는 rhoA==rhoB일 때만 "vK를 선결정"하는 해가 가능.
+  //
+  const sameRhoAB = Math.abs(rhoA - rhoB) < 1e-9;
 
-    const total_uL = (volA || 0) + (volB || 0);
-    if(total_uL <= 0){
-      document.getElementById("resultC").innerText = "A액과 B액 중 최소 하나는 0보다 커야 합니다.";
-      return;
-    }
+  let vA = NaN, vB = NaN, vK = NaN;
+  let stepsText = [];
 
-    const mass_total_mg = total_uL * density;  // mg
-    const K0 = mass_total_mg * (K_PER_100MG/100); // mg
-    const N0 = mass_total_mg * (N_PER_100MG/100); // mg
-
+  if(sameRhoAB){
+    // r = tK / tN
     const r = tK / tN;
-    const currentRatio = K0 / N0;
 
-    const deltaK_mg = (r * N0) - K0;
+    // K0 = (S * rhoA) * 0.0425
+    // N0 = (S * rhoA) * 0.0575
+    // K를 목표비로 맞추기 위한 추가 K 질량 deltaK = r*N0 - K0 = (S * rhoA) * (0.0575*r - 0.0425)
+    // K2SO4 용액 질량 mKsol = deltaK / K_MASS_FRAC_IN_10WT
+    // vK = mKsol / rhoK  →  vK = (S * rhoA * (0.0575*r - 0.0425)) / (K_MASS_FRAC_IN_10WT * rhoK)
+    //
+    // 동시에 S = Vadd - vK 이므로
+    // vK = ((Vadd - vK) * rhoA * (0.0575*r - 0.0425)) / (fK * rhoK)
+    // vK * (1 + (rhoA*(0.0575*r - 0.0425))/(fK*rhoK)) = (Vadd * rhoA * (0.0575*r - 0.0425)) / (fK*rhoK)
+    // 따라서 vK를 S 없이 바로 풀 수 있음.
+    const fK = K_MASS_FRAC_IN_10WT;
+    const c  = rhoA * (0.0575*r - 0.0425); // mg/µL * (무차원)
+    const denom = (fK * rhoK);
 
-    const header = `초기 K≈${K0.toFixed(3)} mg, N≈${N0.toFixed(3)} mg (현재비 K:N ≈ ${currentRatio.toFixed(3)})`;
+    let vK_raw = (Vadd * c) / (denom + c); // 위 유도식 정리 결과
+    // 음수 방지
+    if(vK_raw < 0) vK_raw = 0;
 
-    if(deltaK_mg <= 1e-9){
-      document.getElementById("resultC").innerText =
-        `${header}\n목표 비(K:N=${r.toFixed(3)})는 이미 만족 또는 K가 더 많음 → 추가 주입 0 µL`;
-      return;
+    // 이제 S 확정
+    const S = Vadd - vK_raw;
+
+    // 3) EC 제약으로 vA, vB 풀기
+    //   Eprime = ECt - gamma*vK
+    //   vA + vB = S
+    //   alpha*vA + beta*vB = Eprime
+    const Eprime = ECt - gamma * vK_raw;
+
+    if(Math.abs(beta - alpha) < 1e-12){
+      // alpha == beta 인 경우: 가능한 조건은 Eprime == alpha*S
+      if(Math.abs(Eprime - alpha*S) > 1e-6){
+        out.innerHTML = `<span class="bad">해가 없어. (alpha=beta인데 E'와 S가 맞지 않음)</span>`;
+        meta.textContent = buildMetaAfter(
+          S, vK_raw, NaN, NaN, r, rhoA, rhoB, rhoK, waterL, alpha, beta, gamma
+        );
+        dbg.textContent = buildDebugText({waterL, ECt, Vadd, dEA, dEB, dEK, tK, tN, rhoA, rhoB, rhoK, fK, r, c, vK_raw, S, Eprime, alpha, beta, gamma}, "alpha=beta 특수 케이스 불일치");
+        return;
+      }
+      // 아무 비로나 분배 가능 → 1:1로 분배
+      vA = S/2;
+      vB = S/2;
+    }else{
+      // vB = (Eprime - alpha*S) / (beta - alpha)
+      vB = (Eprime - alpha*S) / (beta - alpha);
+      vA = S - vB;
     }
 
-    const m_sol_mg = deltaK_mg / K_MASS_FRAC_IN_10WT;  // mg
-    const vol_needed_uL = m_sol_mg / density;          // µL
+    vK = vK_raw;
 
-    const out = [
-      header,
-      `목표 비(K:N=${r.toFixed(3)}) 달성을 위해 추가 K 필요량 ≈ ${deltaK_mg.toFixed(3)} mg`,
-      `⇒ 10 wt% K₂SO₄ 용액 질량 ≈ ${m_sol_mg.toFixed(2)} mg`,
-      `⇒ 주입 부피 ≈ ${vol_needed_uL.toFixed(1)} µL (${(vol_needed_uL/1000).toFixed(3)} mL)`
-    ];
-    document.getElementById("resultC").innerText = out.join("\n");
-  }catch(e){
-    document.getElementById("resultC").innerText = e.message;
+  }else{
+    // rhoA != rhoB인 일반 해법:
+    // 이 경우 K,N 질량이 vA,vB 각각에 의존하므로 vK를 먼저 닫힌형으로 못 구한다.
+    // 해법: vK를 모르는 상태에서 두 식을 풀어 vA,vB를 S로 표현한 뒤,
+    // K,N으로부터 vK를 계산하고 S=Vadd-vK을 만족하도록 고정점 반복(수렴이 빠름)
+    const r = tK / tN;
+    const fK = K_MASS_FRAC_IN_10WT;
+
+    const tol = 1e-6;
+    let vK_guess = 0;
+    let iter = 0, maxIter = 100;
+
+    while(iter < maxIter){
+      const S = Vadd - vK_guess;
+      if(S < 0){ // 총량보다 K가 커질 수 없음
+        out.innerHTML = `<span class="bad">해가 없어. (K₂SO₄가 총량을 초과)</span>`;
+        return;
+      }
+      // EC 제약으로 vA,vB
+      const Eprime = ECt - gamma * vK_guess;
+      let vA_trial, vB_trial;
+      if(Math.abs(beta - alpha) < 1e-12){
+        if(Math.abs(Eprime - alpha*S) > 1e-6){
+          out.innerHTML = `<span class="bad">해가 없어. (alpha=beta인데 E'와 S가 맞지 않음)</span>`;
+          return;
+        }
+        vA_trial = S/2; vB_trial = S/2;
+      }else{
+        vB_trial = (Eprime - alpha*S) / (beta - alpha);
+        vA_trial = S - vB_trial;
+      }
+      if(vA_trial < -1e-9 || vB_trial < -1e-9){
+        out.innerHTML = `<span class="bad">해가 없어. (vA 또는 vB가 음수)</span>`;
+        return;
+      }
+
+      // 현재 K,N 질량
+      const massAB_mg = vA_trial*rhoA + vB_trial*rhoB;
+      const K0 = massAB_mg * 0.0425;
+      const N0 = massAB_mg * 0.0575;
+
+      // 필요한 추가 K
+      const deltaK = r * N0 - K0;
+      let vK_new = (deltaK > 0) ? (deltaK / (fK * rhoK)) : 0;
+
+      if(Math.abs(vK_new - vK_guess) < tol){
+        vA = vA_trial; vB = vB_trial; vK = vK_new;
+        break;
+      }
+      vK_guess = vK_new;
+      iter++;
+    }
+
+    if(!Number.isFinite(vA) || !Number.isFinite(vB) || !Number.isFinite(vK)){
+      out.innerHTML = `<span class="bad">수렴 실패 또는 입력 조건으로는 해를 찾기 어려워.</span>`;
+      return;
+    }
   }
+
+  // 최종 검증
+  const negs = [];
+  if(vA < -1e-9) negs.push("vA");
+  if(vB < -1e-9) negs.push("vB");
+  if(vK < -1e-9) negs.push("vK");
+  if(negs.length){
+    out.innerHTML = `<span class="bad">해가 없어. (${negs.join(", ")} < 0)</span>`;
+    return;
+  }
+
+  // 4) 결과 및 메타 정보
+  // 현재 K:N(AB만), 최종 K:N(AB + K2SO4)
+  const massAB_mg_exact = vA*rhoA + vB*rhoB;
+  const K0 = massAB_mg_exact * 0.0425;
+  const N0 = massAB_mg_exact * 0.0575;
+  const K_added = vK * rhoK * K_MASS_FRAC_IN_10WT;
+  const K_final = K0 + K_added;
+  const N_final = N0;
+  const ratio_now = (N0 > 0) ? (K0 / N0) : NaN;
+  const ratio_final = (N_final > 0) ? (K_final / N_final) : NaN;
+  const ratio_target = tK / tN;
+
+  // EC 검증(스케일 반영)
+  const EC_check = alpha*vA + beta*vB + gamma*vK;
+
+  // 차이(목표 대비)
+  const ratio_diff = ratio_final - ratio_target;
+
+  const fmtVol = (uL)=> `${uL.toFixed(1)} µL (${(uL/1000).toFixed(3)} mL)`;
+  const okEC = Math.abs(EC_check - ECt) < 1e-3;
+
+  let lines = [];
+  lines.push(`필요한 A: ${fmtVol(Math.max(0, vA))}`);
+  lines.push(`필요한 B: ${fmtVol(Math.max(0, vB))}`);
+  lines.push(`필요한 10% K₂SO₄: ${fmtVol(Math.max(0, vK))}`);
+  out.textContent = lines.join("\n");
+
+  const metaLines = [];
+  metaLines.push(`물 스케일 반영: 물 ${waterL.toFixed(2)} L → 기울기(µL당 EC) = A:${alpha.toFixed(5)}, B:${beta.toFixed(5)}, K₂SO₄:${gamma.toFixed(5)} mS/cm`);
+  metaLines.push(`현재 K:N (A+B만) ≈ ${safeRatio(ratio_now)}   /   최종 K:N (K₂SO₄ 반영) ≈ ${safeRatio(ratio_final)}`);
+  metaLines.push(`목표 K:N = ${ratio_target.toFixed(3)}   →   차이(최종-목표) = ${signed(ratio_diff)}`);
+  metaLines.push(`EC 검증: 계산된 EC ≈ ${EC_check.toFixed(3)} mS/cm ${okEC ? "✅" : "⚠️ (목표와 차이: " + (EC_check-ECt).toFixed(3) + ")"}`);
+  meta.textContent = metaLines.join("\n");
+
+  // 자세히 보기 박스
+  const dbgText = [];
+  dbgText.push("[가정]");
+  dbgText.push("- EC는 주입량/물량에 선형으로 비례");
+  dbgText.push("- 조성은 질량 기준(밀도 사용)");
+  dbgText.push("- 혼합물 100 mg당 K 4.25 mg, N 5.75 mg");
+  dbgText.push(`- K₂SO₄ 10 wt% 용액의 K 질량분율 fK ≈ ${K_MASS_FRAC_IN_10WT.toFixed(5)}`);
+  dbgText.push(`- 밀도: A=${rhoA.toFixed(3)}, B=${rhoB.toFixed(3)}, K₂SO₄=${rhoK.toFixed(3)} (단위 g/mL = mg/µL)`);
+  dbgText.push("");
+  dbgText.push("[계산식 개요]");
+  dbgText.push("1) 물 스케일: alpha = (dE_A/250)/waterL, beta = (dE_B/250)/waterL, gamma = (dE_K/250)/waterL");
+  dbgText.push("2) vA + vB + vK = V_add");
+  dbgText.push("3) EC 식: alpha*vA + beta*vB + gamma*vK = 목표 EC");
+  dbgText.push("4) K:N 목표 비 적용:");
+  dbgText.push("   - A,B 질량(mg) = vA*rhoA + vB*rhoB");
+  dbgText.push("   - K0 = 질량*0.0425, N0 = 질량*0.0575");
+  dbgText.push("   - 추가 K 질량 deltaK = (tK/tN)*N0 - K0 (음수면 0)");
+  dbgText.push("   - 필요한 K₂SO₄ 용액 질량 m = deltaK / fK, 부피 vK = m / rhoK");
+  dbgText.push("");
+  dbgText.push("[대입값]");
+  dbgText.push(`waterL=${waterL}, EC_target=${ECt}, V_add=${Vadd}`);
+  dbgText.push(`dE_A=${dEA}, dE_B=${dEB}, dE_K=${dEK}`);
+  dbgText.push(`tK=${tK}, tN=${tN}`);
+  dbgText.push(`alpha=${alpha.toFixed(6)}, beta=${beta.toFixed(6)}, gamma=${gamma.toFixed(6)}`);
+  dbgText.push(`vA=${Math.max(0,vA).toFixed(3)}, vB=${Math.max(0,vB).toFixed(3)}, vK=${Math.max(0,vK).toFixed(3)}`);
+  dbgText.push(`K0=${K0.toFixed(4)} mg, N0=${N0.toFixed(4)} mg, K_added=${K_added.toFixed(4)} mg`);
+  dbgText.push(`K_final=${K_final.toFixed(4)} mg, N_final=${N_final.toFixed(4)} mg`);
+  dbgText.push(`K:N now=${safeRatio(ratio_now)}, K:N final=${safeRatio(ratio_final)}, target=${ratio_target.toFixed(3)}`);
+  dbgText.push(`EC_check=${EC_check.toFixed(4)} mS/cm`);
+  document.getElementById("debugBox").textContent = dbgText.join("\n");
+
+  // 저장
+  saveInputs();
 }
 
-// 초기화
+// 안전 출력용
+function safeRatio(r){
+  if(!Number.isFinite(r)) return "NaN";
+  return r.toFixed(3);
+}
+function signed(x){
+  const s = x>=0 ? "+" : "";
+  return s + x.toFixed(3);
+}
+
+// ----- 이벤트 -----
+document.getElementById("btnCalc").addEventListener("click", calculate);
 window.addEventListener("load", ()=>{
-  loadBaseline();
+  loadInputs();
 });
+
+// 입력 변경 시 자동 저장
+for(const id of ["waterL","targetEC","totalAdd","dEA","dEB","dEK","tK","tN","rhoA","rhoB","rhoK"]){
+  const el = document.getElementById(id);
+  el.addEventListener("change", saveInputs);
+  el.addEventListener("input", ()=>{ /* no-op live */ });
+}
 </script>
 </body>
 </html>
