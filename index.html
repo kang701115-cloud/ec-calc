@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액 배합 계산기 — 동량 A:B + 총량 고정</title>
+<title>양액 배합 계산기 — AB 동량 · EC 우선 · 배치부피 반영</title>
 <style>
-:root{ --brand:#007BFF; --brand-dark:#0056b3; --card-w: 720px; }
+:root{ --brand:#007BFF; --brand-dark:#0056b3; --card-w: 760px; }
 *{box-sizing:border-box}
 body{ font-family: Arial, sans-serif; background:#f7f8fa; margin:0; padding:24px; text-align:center; }
-h1{color:var(--brand); font-size:2.2rem; margin:0 0 18px}
+h1{color:var(--brand); font-size:2.1rem; margin:0 0 18px}
 .wrap{max-width:var(--card-w); margin:0 auto}
 .card{ background:#fff; padding:20px; margin:16px auto; border-radius:14px; box-shadow:0 6px 16px rgba(0,0,0,.06); text-align:left; font-size:1.06rem; }
-.card h2{margin:0 0 10px; font-size:1.25rem; color:#222}
+.card h2{margin:0 0 10px; font-size:1.22rem; color:#222}
 label{display:block; margin-top:12px; font-weight:700}
 .row{display:flex; gap:12px; flex-wrap:wrap}
 .row > div{flex:1 1 220px}
@@ -30,44 +30,45 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
 .bad{color:#b00020; font-weight:700}
 .ok{color:#0a7a0a; font-weight:700}
 .footer{font-size:.9rem; color:#666; margin-top:16px}
-.grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-@media (max-width:740px){ .grid{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
-<h1>양액 배합 계산기 (A:B 동량 + 총량 고정)</h1>
+<h1>양액 배합 계산기 (AB 동량 · EC 우선)</h1>
 <div class="wrap">
 
   <div class="card">
-    <h2>입력</h2>
+    <h2>배치(최종) 부피 & 목표</h2>
     <div class="row">
       <div>
-        <label for="Vadd">조제할 총 주입량 (µL)</label>
-        <input type="number" id="Vadd" step="1" placeholder="예: 500">
-        <small class="hint">A+B 혼합액 부피 + 10% K₂SO₄ 용액 부피의 합.</small>
+        <label for="Vbatch">배치 부피 (L)</label>
+        <input type="number" id="Vbatch" step="0.1" placeholder="예: 2, 20">
+        <small class="hint">이번에 실제로 만들 총 용액의 부피(리터).</small>
       </div>
       <div>
-        <label for="ECt">목표 EC (mS/cm)</label>
+        <label for="ECt">목표 EC (mS/cm, 1 L 기준)</label>
         <input type="number" id="ECt" step="0.01" placeholder="예: 1.20">
-        <small class="hint">물 1 L 기준에서 달성하고 싶은 EC.</small>
+        <small class="hint">EC는 리터당 목표치이므로, 배치 부피가 커져도 리터당 필요량에 배치 부피를 곱해 계산해.</small>
       </div>
     </div>
+  </div>
 
+  <div class="card">
+    <h2>EC 증분(1 L 기준, 주입 기준량)</h2>
     <div class="row">
       <div>
-        <label for="dEA">A 250 µL → EC 증가 (mS/cm)</label>
-        <input type="number" id="dEA" step="0.01" placeholder="예: 0.40">
+        <label for="dE_AB_500">AB 혼합 500 µL(= A 250 + B 250) → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_AB_500" step="0.01" placeholder="예: 0.80">
+        <small class="hint">A와 B는 항상 동량. 이 값은 “두 개 합쳐 500 µL 주입 시”의 EC 증가.</small>
       </div>
       <div>
-        <label for="dEB">B 250 µL → EC 증가 (mS/cm)</label>
-        <input type="number" id="dEB" step="0.01" placeholder="예: 0.40">
-      </div>
-      <div>
-        <label for="dEK">10% K₂SO₄ 250 µL → EC 증가 (mS/cm)</label>
-        <input type="number" id="dEK" step="0.01" placeholder="예: 0.05">
+        <label for="dE_K_250">10% K₂SO₄ 250 µL → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_K_250" step="0.01" placeholder="예: 0.05">
       </div>
     </div>
+  </div>
 
+  <div class="card">
+    <h2>K₂SO₄ 밀도와 목표 K:N</h2>
     <div class="row">
       <div>
         <label for="rhoK">10% K₂SO₄ 밀도 (g/mL = mg/µL)</label>
@@ -82,10 +83,9 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
         <input type="number" id="tN" step="0.01" placeholder="예: 1">
       </div>
     </div>
-
     <small class="hint">
-      고정 가정: A+B 혼합액의 밀도 = <b>1.21 g/mL</b> (= mg/µL), A+B 혼합액 100 mg당 N=5.75 mg, K=4.25 mg.
-      EC 증분 값들은 모두 “물 1 L 기준, 250 µL 투입 시” 수치야.
+      고정 가정: AB 혼합 밀도 = <b>1.21 g/mL</b> (= mg/µL), AB 혼합 100 mg당 N=5.75 mg, K=4.25 mg(고정).<br>
+      10 wt% K₂SO₄ 용액의 K 질량분율 ≈ 0.0448. 입력된 EC 증분값은 모두 1 L 기준.
     </small>
   </div>
 
@@ -100,33 +100,41 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
       <div class="details-body" id="debugBox"></div>
     </details>
 
-    <div class="pill">ℹ️ EC는 주입량에 선형, 조성은 질량 기준(밀도 사용)으로 선형 가정.</div>
+    <div class="pill">ℹ️ EC는 주입량/물량에 선형, 조성은 질량 기준(밀도 사용)으로 선형 가정.</div>
   </div>
 
   <div class="footer">
-    입력값은 브라우저에 자동 저장됨(localStorage). 새로고침해도 유지돼.
+    입력값은 브라우저에 자동 저장됨(localStorage).
   </div>
 </div>
 
 <script>
 "use strict";
 
-// ---- 상수 ----
-const RHO_AB = 1.21; // g/mL = mg/µL (A+B 혼합액 밀도)
+/* ===== 고정 상수 ===== */
+const RHO_AB = 1.21; // g/mL = mg/µL (AB 혼합 밀도)
 const ATOMIC = { K: 39.0983, S: 32.065, O: 15.999 };
 const M_K2SO4 = 2*ATOMIC.K + ATOMIC.S + 4*ATOMIC.O;
-const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4;   // ≈0.448
-const F_K = 0.10 * MASSFRAC_K_IN_K2SO4;                // 10 wt% 용액 내 K 질량분율 ≈ 0.0448
+const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4; // ≈0.448
+const F_K = 0.10 * MASSFRAC_K_IN_K2SO4;             // 10 wt% 용액 내 K 질량비 ≈ 0.0448
+const KEY = "EC_first_equalAB_per_batch_v1";
 
-const KEY = "AB_equal_total_fixed_v1";
-
-// ---- 저장/불러오기 ----
+/* ===== 유틸 ===== */
 function getNum(id){ const v = parseFloat(document.getElementById(id).value); return Number.isFinite(v) ? v : NaN; }
+function fmt(uL){ return `${uL.toFixed(1)} µL (${(uL/1000).toFixed(3)} mL)`; }
+function safeRatio(r){ return Number.isFinite(r) ? r.toFixed(3) : "NaN"; }
+function pm(x){ return (x>=0?"+":"") + x.toFixed(3); }
+
+/* ===== 저장/불러오기 ===== */
 function saveInputs(){
   const data = {
-    Vadd: getNum("Vadd"), ECt: getNum("ECt"),
-    dEA: getNum("dEA"), dEB: getNum("dEB"), dEK: getNum("dEK"),
-    rhoK: getNum("rhoK"), tK: getNum("tK"), tN: getNum("tN")
+    Vbatch: getNum("Vbatch"),
+    ECt: getNum("ECt"),
+    dE_AB_500: getNum("dE_AB_500"),
+    dE_K_250: getNum("dE_K_250"),
+    rhoK: getNum("rhoK"),
+    tK: getNum("tK"),
+    tN: getNum("tN"),
   };
   localStorage.setItem(KEY, JSON.stringify(data));
 }
@@ -142,18 +150,28 @@ function loadInputs(){
   }catch(e){}
 }
 
-// ---- 계산 ----
+/* ===== 핵심 계산 (1 L당 → 배치 부피 곱) =====
+입력:
+- Vbatch (L)
+- ECt (mS/cm)
+- dE_AB_500 (mS/cm) : AB 500µL 주입 시 1L 증분
+- dE_K_250  (mS/cm) : K2SO4 250µL 주입 시 1L 증분
+- rhoK (mg/µL)
+- tK, tN (목표 K:N)
+고정:
+- RHO_AB, F_K
+출력:
+- vAB_total, vK_total (배치 기준), A=B=vAB_total/2
+- 총 주입량, K:N 현재/최종/목표, 달성 EC
+*/
 function calculate(){
-  const Vadd = getNum("Vadd");      // 총 주입량 (µL) = v_AB + v_K
-  const ECt  = getNum("ECt");       // 목표 EC (mS/cm)
-
-  const dEA  = getNum("dEA");       // A 250µL → ΔEC (mS/cm)
-  const dEB  = getNum("dEB");       // B 250µL → ΔEC
-  const dEK  = getNum("dEK");       // 10%K2SO4 250µL → ΔEC
-
-  const rhoK = getNum("rhoK");      // g/mL = mg/µL
-  const tK   = getNum("tK");
-  const tN   = getNum("tN");
+  const Vbatch   = getNum("Vbatch");
+  const ECt      = getNum("ECt");
+  const dE_AB_500= getNum("dE_AB_500");
+  const dE_K_250 = getNum("dE_K_250");
+  const rhoK     = getNum("rhoK");
+  const tK       = getNum("tK");
+  const tN       = getNum("tN");
 
   const out = document.getElementById("result");
   const meta= document.getElementById("meta");
@@ -161,107 +179,107 @@ function calculate(){
   out.textContent=""; meta.textContent=""; dbg.textContent="";
 
   // 유효성
-  if([Vadd, ECt, dEA, dEB, dEK, rhoK, tK, tN].some(v=>!Number.isFinite(v) || v<0)){
-    out.innerHTML = `<span class="bad">값을 모두 올바르게 입력해줘.</span>`;
-    return;
+  if([Vbatch, ECt, dE_AB_500, dE_K_250, rhoK, tK, tN].some(v => !Number.isFinite(v) || v < 0)){
+    out.innerHTML = `<span class="bad">값을 모두 올바르게 입력해줘.</span>`; return;
   }
-  if(Vadd === 0){ out.innerHTML = `<span class="bad">총 주입량은 0일 수 없어.</span>`; return; }
+  if(Vbatch === 0){ out.innerHTML = `<span class="bad">배치 부피는 0일 수 없어.</span>`; return; }
   if(tK === 0 || tN === 0){ out.innerHTML = `<span class="bad">목표 비의 각 항은 0보다 커야 해.</span>`; return; }
 
-  // 1) EC 기울기(µL당): 1 L 기준
-  // A와 B는 동량이므로, A+B 혼합액 v_AB가 만들 EC = (alpha_A + alpha_B)/2 * v_AB
-  const alphaA = dEA/250;     // A µL당 EC
-  const alphaB = dEB/250;     // B µL당 EC
-  const gamma  = dEK/250;     // K2SO4 µL당 EC
-  const sAB    = (alphaA + alphaB)/2; // AB 혼합의 µL당 EC
+  // 1) 1 L당 µL→EC 기울기
+  const sAB   = dE_AB_500 / 500;  // AB 혼합 1µL당 mS/cm
+  const gamma = dE_K_250 / 250;   // K2SO4 1µL당 mS/cm
 
-  // 2) 목표 K:N 비 적용 → v_K를 v_AB의 함수로
+  // 2) 목표 K:N (r) → K2SO4 필요 비율 c (vK = c * vAB, 1 L 기준)
   const r = tK / tN;
-  // deltaK(필요 K 질량) = (r*N0 - K0) = (v_AB*RHO_AB)*(0.0575*r - 0.0425)
-  // v_K = max(0, deltaK / (F_K * rhoK)) = max(0, c_raw * v_AB)
   const c_raw = (RHO_AB * (0.0575*r - 0.0425)) / (F_K * rhoK);
-  const c = Math.max(0, c_raw);
+  const c = Math.max(0, c_raw); // K를 줄일 수 없으니 음수면 0으로
 
-  // 3) 총량 제약 v_AB + v_K = Vadd → v_AB*(1 + c) = Vadd
-  const vAB = Vadd / (1 + c);
-  const vK  = Vadd - vAB;
+  // 3) EC 1순위: (sAB + gamma*c) * vAB_perL = ECt
+  const denom = sAB + gamma * c;
+  if(denom <= 0){
+    out.innerHTML = `<span class="bad">EC 기울기 합이 0 이하야. dE 값들을 확인해줘.</span>`; return;
+  }
+  const vAB_perL = ECt / denom;   // 1 L당 AB 혼합량
+  const vK_perL  = c * vAB_perL;  // 1 L당 K2SO4
 
-  // 4) A, B 각각은 동량
-  const vA = vAB/2;
-  const vB = vAB/2;
+  // 4) 배치 부피 곱
+  const vAB_total = vAB_perL * Vbatch;
+  const vK_total  = vK_perL  * Vbatch;
+  const vA_total  = vAB_total / 2;
+  const vB_total  = vAB_total / 2;
+  const Vtotal    = vAB_total + vK_total; // 참고
 
-  // 5) 달성 EC 계산(목표 대비)
-  const EC_calc = sAB * vAB + gamma * vK;
-  const EC_diff = EC_calc - ECt;
+  // 5) K:N 현재/최종
+  const massAB_mg_perL = vAB_perL * RHO_AB;
+  const K0_perL = massAB_mg_perL * 0.0425;
+  const N0_perL = massAB_mg_perL * 0.0575;
+  const K_added_perL = vK_perL * rhoK * F_K;
+  const K_final_perL = K0_perL + K_added_perL;
+  const N_final_perL = N0_perL;
 
-  // 6) K:N 현재/최종 확인
-  const massAB_mg = vAB * RHO_AB;
-  const K0 = massAB_mg * 0.0425;
-  const N0 = massAB_mg * 0.0575;
-  const K_added = vK * rhoK * F_K;
-  const K_final = K0 + K_added;
-  const N_final = N0;
-  const ratio_now = (N0>0)? (K0/N0): NaN;
-  const ratio_fin = (N_final>0)? (K_final/N_final): NaN;
+  const ratio_now  = (N0_perL  > 0)? (K0_perL / N0_perL) : NaN;
+  const ratio_fin  = (N_final_perL > 0)? (K_final_perL / N_final_perL) : NaN;
+  const intrinsic  = 0.0425/0.0575; // ≈ 0.73913
 
-  // 7) 특이상황 안내: 목표 r가 AB 고유비(≈0.739)보다 작으면 K를 뺄 수 없으니 vK=0이 최선
-  const intrinsic = 0.0425/0.0575; // ≈0.73913
-  let warns = [];
+  // 6) 달성 EC (검증, 1 L 기준)
+  const EC_calc_perL = sAB * vAB_perL + gamma * vK_perL;
+
+  // 알림
+  const warns = [];
   if(c_raw < 0){
-    warns.push("목표 K:N이 A+B 고유비(≈0.739)보다 낮아. K₂SO₄로 K를 '줄일' 수는 없어서 vK=0이 최선이야.");
+    warns.push("목표 K:N이 AB 고유비(≈0.739)보다 낮아. K₂SO₄로 K를 줄일 수 없어서 vK=0이 최선이야.");
   }
 
-  // ---------- 출력 ----------
-  const fmt = (uL)=> `${uL.toFixed(1)} µL (${(uL/1000).toFixed(3)} mL)`;
-  const plusminus = (x)=> (x>=0?"+":"") + x.toFixed(3);
-
+  // 출력
   const lines = [];
-  lines.push(`필요한 A:B 혼합액(동량) 합계: ${fmt(vAB)}  →  A=${fmt(vA)}, B=${fmt(vB)}`);
-  lines.push(`필요한 10% K₂SO₄ 용액: ${fmt(Math.max(0,vK))}`);
+  lines.push(`필요한 AB 혼합 총량: ${fmt(vAB_total)}  →  A=${fmt(vA_total)}, B=${fmt(vB_total)}`);
+  lines.push(`필요한 10% K₂SO₄ 총량: ${fmt(Math.max(0, vK_total))}`);
+  lines.push(`참고) 총 주입량: ${fmt(Vtotal)} (AB+K₂SO₄)`);
   out.textContent = lines.join("\n");
 
   const metaLines = [];
-  metaLines.push(`달성 EC(계산): ${EC_calc.toFixed(3)} mS/cm   /   목표 EC: ${ECt.toFixed(3)}   (차이 ${plusminus(EC_diff)})`);
-  metaLines.push(`현재 K:N(AB만) ≈ ${safeRatio(ratio_now)}   /   최종 K:N(AB+K₂SO₄) ≈ ${safeRatio(ratio_fin)}   /   목표 K:N = ${(r).toFixed(3)}`);
+  metaLines.push(`달성 EC(1 L 기준) = ${EC_calc_perL.toFixed(3)} mS/cm  /  목표 EC = ${ECt.toFixed(3)}  (차이 ${pm(EC_calc_perL-ECt)})`);
+  metaLines.push(`K:N 현재(AB만) ≈ ${safeRatio(ratio_now)}  /  최종(AB+K₂SO₄) ≈ ${safeRatio(ratio_fin)}  /  목표 = ${(r).toFixed(3)}`);
   if(warns.length) metaLines.push("⚠️ " + warns.join(" "));
   meta.textContent = metaLines.join("\n");
 
-  // 자세히 보기(가정/수식/대입값)
+  // 자세히 보기
   const dbgText = [];
   dbgText.push("[가정]");
-  dbgText.push("- A:B는 항상 동량 (vA = vB = vAB/2)");
-  dbgText.push("- A+B 혼합액 밀도 = 1.21 g/mL (= mg/µL)");
-  dbgText.push("- A+B 혼합액 100 mg당 N=5.75 mg, K=4.25 mg");
-  dbgText.push("- 10 wt% K₂SO₄ 용액 내 K 질량분율 fK ≈ " + F_K.toFixed(5));
-  dbgText.push("- EC 증분 값은 모두 물 1 L 기준에서 250 µL 투입 시 값");
+  dbgText.push("- A:B는 항상 동량 (AB 혼합)");
+  dbgText.push("- AB 혼합 밀도 = 1.21 g/mL (= mg/µL)");
+  dbgText.push("- AB 혼합 100 mg당 N=5.75 mg, K=4.25 mg");
+  dbgText.push(`- 10 wt% K₂SO₄ 용액 내 K 질량분율 fK ≈ ${F_K.toFixed(5)}`);
+  dbgText.push("- EC 증분값은 모두 1 L 기준에서 정의됨");
   dbgText.push("");
   dbgText.push("[계산식 요약]");
-  dbgText.push("1) µL당 EC: alphaA=dEA/250, alphaB=dEB/250, gamma=dEK/250, sAB=(alphaA+alphaB)/2");
-  dbgText.push("2) 목표 K:N=r=tK/tN → deltaK = (vAB*1.21)*(0.0575*r - 0.0425)");
-  dbgText.push("   vK = max(0, deltaK/(fK*rhoK)) = max(0, c_raw * vAB),  c_raw=(1.21*(0.0575*r - 0.0425))/(fK*rhoK)");
-  dbgText.push("3) 총량: vAB + vK = Vadd → vAB = Vadd/(1+c), vK = Vadd - vAB,  (c=max(0,c_raw))");
-  dbgText.push("4) EC 산출: EC_calc = sAB*vAB + gamma*vK");
+  dbgText.push("sAB = dE_AB_500 / 500 (AB 1µL당 EC)");
+  dbgText.push("gamma = dE_K_250 / 250 (K₂SO₄ 1µL당 EC)");
+  dbgText.push("r = tK / tN");
+  dbgText.push("c_raw = (1.21*(0.0575*r - 0.0425)) / (fK*rhoK),  c = max(0, c_raw)");
+  dbgText.push("EC 1순위: (sAB + gamma*c) * vAB_perL = EC_target  →  vAB_perL = EC_target / (sAB + gamma*c),  vK_perL = c*vAB_perL");
+  dbgText.push("배치 부피 반영: vAB_total = vAB_perL * Vbatch, vK_total = vK_perL * Vbatch");
   dbgText.push("");
-  dbgText.push("[대입값/결과]");
-  dbgText.push(`Vadd=${Vadd}, EC_target=${ECt}`);
-  dbgText.push(`dEA=${dEA}, dEB=${dEB}, dEK=${dEK} → alphaA=${alphaA.toFixed(6)}, alphaB=${alphaB.toFixed(6)}, gamma=${gamma.toFixed(6)}, sAB=${sAB.toFixed(6)}`);
-  dbgText.push(`rhoK=${rhoK}, tK=${tK}, tN=${tN}, r=${r.toFixed(6)}, c_raw=${c_raw.toFixed(6)}, c=${c.toFixed(6)}`);
-  dbgText.push(`vAB=${vAB.toFixed(3)}, vK=${vK.toFixed(3)}, vA=${vA.toFixed(3)}, vB=${vB.toFixed(3)}`);
-  dbgText.push(`EC_calc=${EC_calc.toFixed(4)}, EC_diff=${EC_diff.toFixed(4)}`);
-  dbgText.push(`K0=${K0.toFixed(4)} mg, N0=${N0.toFixed(4)} mg, K_added=${K_added.toFixed(4)} mg`);
-  dbgText.push(`K_final=${K_final.toFixed(4)} mg, N_final=${N_final.toFixed(4)} mg, ratio_now=${safeRatio(ratio_now)}, ratio_fin=${safeRatio(ratio_fin)}`);
+  dbgText.push("[대입값/결과 (1 L 기준)]");
+  dbgText.push(`Vbatch=${Vbatch} L, EC_target=${ECt}`);
+  dbgText.push(`dE_AB_500=${dE_AB_500}, dE_K_250=${dE_K_250} → sAB=${sAB.toFixed(6)}, gamma=${gamma.toFixed(6)}`);
+  dbgText.push(`rhoK=${rhoK}, tK=${tK}, tN=${tN}, r=${r.toFixed(6)}`);
+  dbgText.push(`c_raw=${c_raw.toFixed(6)}, c=${c.toFixed(6)}`);
+  dbgText.push(`vAB_perL=${vAB_perL.toFixed(3)}, vK_perL=${vK_perL.toFixed(3)}, EC_calc=${EC_calc_perL.toFixed(4)}`);
+  dbgText.push("");
+  dbgText.push("[배치 총량]");
+  dbgText.push(`AB_total=${vAB_total.toFixed(3)} µL (A=${(vAB_total/2).toFixed(3)}, B=${(vAB_total/2).toFixed(3)}), K_total=${vK_total.toFixed(3)} µL`);
+  dbgText.push(`V_total=${(vAB_total+vK_total).toFixed(3)} µL`);
   document.getElementById("debugBox").textContent = dbgText.join("\n");
 
   // 저장
   saveInputs();
 }
 
-function safeRatio(r){ return Number.isFinite(r) ? r.toFixed(3) : "NaN"; }
-
-// 이벤트
+/* ===== 이벤트 ===== */
 document.getElementById("btnCalc").addEventListener("click", calculate);
 window.addEventListener("load", loadInputs);
-for(const id of ["Vadd","ECt","dEA","dEB","dEK","rhoK","tK","tN"]){
+for(const id of ["Vbatch","ECt","dE_AB_500","dE_K_250","rhoK","tK","tN"]){
   const el = document.getElementById(id);
   el.addEventListener("change", saveInputs);
 }
