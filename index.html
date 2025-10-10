@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액 배합 계산기 — 기능 D 전용</title>
+<title>양액 배합 계산기 — 자동 EC 맞춤(총부피 미지정)</title>
 <style>
 :root{ --brand:#007BFF; --brand-dark:#0056b3; --card-w: 680px; }
 *{box-sizing:border-box}
@@ -29,13 +29,11 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
 .details-body{padding:10px 2px; font-size:.98rem; color:#333; white-space:pre-line}
 .bad{color:#b00020; font-weight:700}
 .ok{color:#0a7a0a; font-weight:700}
-.grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
 .footer{font-size:.9rem; color:#666; margin-top:16px}
-@media (max-width:720px){ .grid-3{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
-<h1>양액 배합 계산기 (기능 D)</h1>
+<h1>양액 배합 계산기 (자동 EC 맞춤)</h1>
 <div class="wrap">
 
   <div class="card">
@@ -49,10 +47,6 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
       <div>
         <label for="targetEC">목표 EC (mS/cm)</label>
         <input type="number" id="targetEC" step="0.01" placeholder="예: 1.20">
-      </div>
-      <div>
-        <label for="totalAdd">총 주입 부피 V_add (µL)</label>
-        <input type="number" id="totalAdd" step="1" placeholder="예: 500">
       </div>
     </div>
   </div>
@@ -135,14 +129,13 @@ const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4; // ≈ 0.448
 const K_MASS_FRAC_IN_10WT = 0.10 * MASSFRAC_K_IN_K2SO4; // ≈ 0.0448 (용액 전체 대비 K 질량분율)
 
 // ----- 로컬 스토리지 키 -----
-const KEY = "mixD_inputs_v1";
+const KEY = "mixD_auto_inputs_v1";
 
 // ----- 유틸 -----
 function saveInputs(){
   const data = {
     waterL: getNum("waterL"),
     targetEC: getNum("targetEC"),
-    totalAdd: getNum("totalAdd"),
     dEA: getNum("dEA"),
     dEB: getNum("dEB"),
     dEK: getNum("dEK"),
@@ -170,12 +163,13 @@ function getNum(id){
   return Number.isFinite(v) ? v : NaN;
 }
 
-// ----- 핵심 계산 -----
+// ----- 핵심 계산 (총부피 자동 결정) -----
+// 아이디어: EC를 가장 적은 총부피로 맞추는 해는 경계해(둘 중 하나 0)에서 나온다.
+// 케이스A: vB=0 → A만 + K2SO4, 케이스B: vA=0 → B만 + K2SO4.
+// 두 케이스를 계산해 총부피가 더 작은 쪽을 선택.
 function calculate(){
-  // 입력 읽기
   const waterL  = getNum("waterL");    // L
   const ECt     = getNum("targetEC");  // mS/cm
-  const Vadd    = getNum("totalAdd");  // µL
 
   const dEA     = getNum("dEA");       // mS/cm (250 µL in 1 L)
   const dEB     = getNum("dEB");       // mS/cm
@@ -196,7 +190,7 @@ function calculate(){
   dbg.textContent  = "";
 
   // 유효성
-  if([waterL, ECt, Vadd, dEA, dEB, dEK, tK, tN, rhoA, rhoB, rhoK].some(v => !Number.isFinite(v) || v < 0)){
+  if([waterL, ECt, dEA, dEB, dEK, tK, tN, rhoA, rhoB, rhoK].some(v => !Number.isFinite(v) || v < 0)){
     out.innerHTML = `<span class="bad">값을 모두 올바르게 입력해줘.</span>`;
     return;
   }
@@ -209,189 +203,97 @@ function calculate(){
     return;
   }
 
-  // 1) 물 양 스케일 반영: 단위 기울기(µL당 EC)
-  //   alpha = (dEA/250) / waterL, beta = (dEB/250) / waterL, gamma = (dEK/250) / waterL
-  const alpha = (dEA / 250) / waterL;
-  const beta  = (dEB / 250) / waterL;
-  const gamma = (dEK / 250) / waterL;
+  // 물 스케일(µL당 EC 기울기)
+  const alpha = (dEA / 250) / waterL; // A 한 µL당 EC
+  const beta  = (dEB / 250) / waterL; // B 한 µL당 EC
+  const gamma = (dEK / 250) / waterL; // K2SO4 한 µL당 EC
 
-  // 2) K:N 목표 비를 맞추기 위해 필요한 K2SO4 용액량 먼저 추정
-  //   A,B 합부피를 S0라고 두면, A,B 질량 = vA*rhoA + vB*rhoB
-  //   하지만 vA,vB를 아직 몰라서, 일단 vK를 모르는 상태에선 직접 못 구함.
-  //   트릭: vK는 최종적으로 vA+vB=S=Vadd-vK에 의해 결정되므로,
-  //   S를 S=Vadd-vK라고 두고 K,N을 S로 표현해 vK를 먼저 구한다.
-  //
-  //   S = Vadd - vK
-  //   A,B 질량(mg) = vA*rhoA + vB*rhoB = (rhoA*vA + rhoB*vB)
-  //   평균 밀도로 단순화하지 말고, 우선 "A,B 비율을 아직 모른다" → 안전한 근사로 rhoAB를 동일로 가정하는 대신
-  //   여기서는 A와 B의 밀도가 동일(1.21)이라는 네 전제에 맞춰 rhoA==rhoB라면
-  //   질량 = (vA+vB)*rhoA = S * rhoA 로 정확히 표현 가능.
-  //
-  //   네가 준 전제는 A=1.21, B=1.21 이므로, 이 경우 질량 = S * 1.21 이 됨.
-  //   만약 rhoA!=rhoB로 바꾸면 S만으론 정확치 않다(그땐 A,B를 같이 풀어야 함).
-  //   여기서는 rhoA==rhoB일 때만 "vK를 선결정"하는 해가 가능.
-  //
-  const sameRhoAB = Math.abs(rhoA - rhoB) < 1e-9;
+  const r = tK / tN;
+  const fK = K_MASS_FRAC_IN_10WT;
 
-  let vA = NaN, vB = NaN, vK = NaN;
-  let stepsText = [];
-
-  if(sameRhoAB){
-    // r = tK / tN
-    const r = tK / tN;
-
-    // K0 = (S * rhoA) * 0.0425
-    // N0 = (S * rhoA) * 0.0575
-    // K를 목표비로 맞추기 위한 추가 K 질량 deltaK = r*N0 - K0 = (S * rhoA) * (0.0575*r - 0.0425)
-    // K2SO4 용액 질량 mKsol = deltaK / K_MASS_FRAC_IN_10WT
-    // vK = mKsol / rhoK  →  vK = (S * rhoA * (0.0575*r - 0.0425)) / (K_MASS_FRAC_IN_10WT * rhoK)
-    //
-    // 동시에 S = Vadd - vK 이므로
-    // vK = ((Vadd - vK) * rhoA * (0.0575*r - 0.0425)) / (fK * rhoK)
-    // vK * (1 + (rhoA*(0.0575*r - 0.0425))/(fK*rhoK)) = (Vadd * rhoA * (0.0575*r - 0.0425)) / (fK*rhoK)
-    // 따라서 vK를 S 없이 바로 풀 수 있음.
-    const fK = K_MASS_FRAC_IN_10WT;
-    const c  = rhoA * (0.0575*r - 0.0425); // mg/µL * (무차원)
-    const denom = (fK * rhoK);
-
-    let vK_raw = (Vadd * c) / (denom + c); // 위 유도식 정리 결과
-    // 음수 방지
-    if(vK_raw < 0) vK_raw = 0;
-
-    // 이제 S 확정
-    const S = Vadd - vK_raw;
-
-    // 3) EC 제약으로 vA, vB 풀기
-    //   Eprime = ECt - gamma*vK
-    //   vA + vB = S
-    //   alpha*vA + beta*vB = Eprime
-    const Eprime = ECt - gamma * vK_raw;
-
-    if(Math.abs(beta - alpha) < 1e-12){
-      // alpha == beta 인 경우: 가능한 조건은 Eprime == alpha*S
-      if(Math.abs(Eprime - alpha*S) > 1e-6){
-        out.innerHTML = `<span class="bad">해가 없어. (alpha=beta인데 E'와 S가 맞지 않음)</span>`;
-        meta.textContent = buildMetaAfter(
-          S, vK_raw, NaN, NaN, r, rhoA, rhoB, rhoK, waterL, alpha, beta, gamma
-        );
-        dbg.textContent = buildDebugText({waterL, ECt, Vadd, dEA, dEB, dEK, tK, tN, rhoA, rhoB, rhoK, fK, r, c, vK_raw, S, Eprime, alpha, beta, gamma}, "alpha=beta 특수 케이스 불일치");
-        return;
-      }
-      // 아무 비로나 분배 가능 → 1:1로 분배
-      vA = S/2;
-      vB = S/2;
-    }else{
-      // vB = (Eprime - alpha*S) / (beta - alpha)
-      vB = (Eprime - alpha*S) / (beta - alpha);
-      vA = S - vB;
-    }
-
-    vK = vK_raw;
-
-  }else{
-    // rhoA != rhoB인 일반 해법:
-    // 이 경우 K,N 질량이 vA,vB 각각에 의존하므로 vK를 먼저 닫힌형으로 못 구한다.
-    // 해법: vK를 모르는 상태에서 두 식을 풀어 vA,vB를 S로 표현한 뒤,
-    // K,N으로부터 vK를 계산하고 S=Vadd-vK을 만족하도록 고정점 반복(수렴이 빠름)
-    const r = tK / tN;
-    const fK = K_MASS_FRAC_IN_10WT;
-
-    const tol = 1e-6;
-    let vK_guess = 0;
-    let iter = 0, maxIter = 100;
-
-    while(iter < maxIter){
-      const S = Vadd - vK_guess;
-      if(S < 0){ // 총량보다 K가 커질 수 없음
-        out.innerHTML = `<span class="bad">해가 없어. (K₂SO₄가 총량을 초과)</span>`;
-        return;
-      }
-      // EC 제약으로 vA,vB
-      const Eprime = ECt - gamma * vK_guess;
-      let vA_trial, vB_trial;
-      if(Math.abs(beta - alpha) < 1e-12){
-        if(Math.abs(Eprime - alpha*S) > 1e-6){
-          out.innerHTML = `<span class="bad">해가 없어. (alpha=beta인데 E'와 S가 맞지 않음)</span>`;
-          return;
-        }
-        vA_trial = S/2; vB_trial = S/2;
-      }else{
-        vB_trial = (Eprime - alpha*S) / (beta - alpha);
-        vA_trial = S - vB_trial;
-      }
-      if(vA_trial < -1e-9 || vB_trial < -1e-9){
-        out.innerHTML = `<span class="bad">해가 없어. (vA 또는 vB가 음수)</span>`;
-        return;
-      }
-
-      // 현재 K,N 질량
-      const massAB_mg = vA_trial*rhoA + vB_trial*rhoB;
-      const K0 = massAB_mg * 0.0425;
-      const N0 = massAB_mg * 0.0575;
-
-      // 필요한 추가 K
-      const deltaK = r * N0 - K0;
-      let vK_new = (deltaK > 0) ? (deltaK / (fK * rhoK)) : 0;
-
-      if(Math.abs(vK_new - vK_guess) < tol){
-        vA = vA_trial; vB = vB_trial; vK = vK_new;
-        break;
-      }
-      vK_guess = vK_new;
-      iter++;
-    }
-
-    if(!Number.isFinite(vA) || !Number.isFinite(vB) || !Number.isFinite(vK)){
-      out.innerHTML = `<span class="bad">수렴 실패 또는 입력 조건으로는 해를 찾기 어려워.</span>`;
-      return;
-    }
+  // 케이스 A: vB = 0 → S = vA
+  //   A+B 질량 = vA*rhoA
+  //   deltaK = r*N0 - K0 = (vA*rhoA)*(0.0575*r - 0.0425)
+  //   vK = max(0, deltaK/(fK*rhoK)) = cA * vA, where cA = max(0, rhoA*(0.0575*r - 0.0425)/(fK*rhoK))
+  //   EC: alpha*vA + gamma*vK = ECt → (alpha + gamma*cA)*vA = ECt → vA = ECt / (alpha + gamma*cA)
+  function calcCaseA(){
+    const cA_raw = rhoA * (0.0575*r - 0.0425) / (fK * rhoK);
+    const cA = Math.max(0, cA_raw);
+    const denom = (alpha + gamma*cA);
+    if(denom <= 0) return null;
+    const vA = ECt / denom;
+    const vK = cA * vA;
+    const vB = 0;
+    const Vtotal = vA + vB + vK;
+    return {vA, vB, vK, Vtotal, c: cA, case: "A-only"};
   }
 
-  // 최종 검증
-  const negs = [];
-  if(vA < -1e-9) negs.push("vA");
-  if(vB < -1e-9) negs.push("vB");
-  if(vK < -1e-9) negs.push("vK");
-  if(negs.length){
-    out.innerHTML = `<span class="bad">해가 없어. (${negs.join(", ")} < 0)</span>`;
+  // 케이스 B: vA = 0 → S = vB
+  //   질량 = vB*rhoB, vK = cB*vB, cB = max(0, rhoB*(0.0575*r - 0.0425)/(fK*rhoK))
+  //   EC: beta*vB + gamma*vK = ECt → (beta + gamma*cB)*vB = ECt
+  function calcCaseB(){
+    const cB_raw = rhoB * (0.0575*r - 0.0425) / (fK * rhoK);
+    const cB = Math.max(0, cB_raw);
+    const denom = (beta + gamma*cB);
+    if(denom <= 0) return null;
+    const vB = ECt / denom;
+    const vK = cB * vB;
+    const vA = 0;
+    const Vtotal = vA + vB + vK;
+    return {vA, vB, vK, Vtotal, c: cB, case: "B-only"};
+  }
+
+  const solA = calcCaseA();
+  const solB = calcCaseB();
+
+  let sol = null;
+  if(solA && solB){
+    sol = (solA.Vtotal <= solB.Vtotal) ? solA : solB; // 더 작은 총 주입량 선택
+  }else if(solA){
+    sol = solA;
+  }else if(solB){
+    sol = solB;
+  }else{
+    out.innerHTML = `<span class="bad">해가 없어. (기울기나 입력값을 확인해줘)</span>`;
     return;
   }
 
-  // 4) 결과 및 메타 정보
-  // 현재 K:N(AB만), 최종 K:N(AB + K2SO4)
-  const massAB_mg_exact = vA*rhoA + vB*rhoB;
-  const K0 = massAB_mg_exact * 0.0425;
-  const N0 = massAB_mg_exact * 0.0575;
-  const K_added = vK * rhoK * K_MASS_FRAC_IN_10WT;
+  const {vA, vB, vK, Vtotal} = sol;
+
+  // 메타/검증 값 계산
+  const massAB_mg = vA*rhoA + vB*rhoB;
+  const K0 = massAB_mg * 0.0425;
+  const N0 = massAB_mg * 0.0575;
+  const K_added = vK * rhoK * fK;
   const K_final = K0 + K_added;
   const N_final = N0;
-  const ratio_now = (N0 > 0) ? (K0 / N0) : NaN;
-  const ratio_final = (N_final > 0) ? (K_final / N_final) : NaN;
-  const ratio_target = tK / tN;
 
-  // EC 검증(스케일 반영)
+  const ratio_now = (N0 > 0) ? (K0/N0) : NaN;
+  const ratio_final = (N_final > 0) ? (K_final/N_final) : NaN;
+  const ratio_target = r;
+
   const EC_check = alpha*vA + beta*vB + gamma*vK;
-
-  // 차이(목표 대비)
-  const ratio_diff = ratio_final - ratio_target;
-
-  const fmtVol = (uL)=> `${uL.toFixed(1)} µL (${(uL/1000).toFixed(3)} mL)`;
   const okEC = Math.abs(EC_check - ECt) < 1e-3;
 
-  let lines = [];
-  lines.push(`필요한 A: ${fmtVol(Math.max(0, vA))}`);
-  lines.push(`필요한 B: ${fmtVol(Math.max(0, vB))}`);
-  lines.push(`필요한 10% K₂SO₄: ${fmtVol(Math.max(0, vK))}`);
-  out.textContent = lines.join("\n");
+  const fmtVol = (uL)=> `${uL.toFixed(1)} µL (${(uL/1000).toFixed(3)} mL)`;
+  const signed = (x)=> (x>=0?"+":"") + x.toFixed(3);
+
+  // 출력
+  const lines = [];
+  lines.push(`필요한 A: ${fmtVol(Math.max(0,vA))}`);
+  lines.push(`필요한 B: ${fmtVol(Math.max(0,vB))}`);
+  lines.push(`필요한 10% K₂SO₄: ${fmtVol(Math.max(0,vK))}`);
+  lines.push(`총 주입량(자동 계산): ${fmtVol(Math.max(0,Vtotal))}`);
+  document.getElementById("result").textContent = lines.join("\n");
 
   const metaLines = [];
-  metaLines.push(`물 스케일 반영: 물 ${waterL.toFixed(2)} L → 기울기(µL당 EC) = A:${alpha.toFixed(5)}, B:${beta.toFixed(5)}, K₂SO₄:${gamma.toFixed(5)} mS/cm`);
+  metaLines.push(`물 스케일 반영: 물 ${waterL.toFixed(2)} L → µL당 EC = A:${alpha.toFixed(5)}, B:${beta.toFixed(5)}, K₂SO₄:${gamma.toFixed(5)} mS/cm`);
   metaLines.push(`현재 K:N (A+B만) ≈ ${safeRatio(ratio_now)}   /   최종 K:N (K₂SO₄ 반영) ≈ ${safeRatio(ratio_final)}`);
-  metaLines.push(`목표 K:N = ${ratio_target.toFixed(3)}   →   차이(최종-목표) = ${signed(ratio_diff)}`);
+  metaLines.push(`목표 K:N = ${ratio_target.toFixed(3)}   →   차이(최종-목표) = ${signed(ratio_final - ratio_target)}`);
   metaLines.push(`EC 검증: 계산된 EC ≈ ${EC_check.toFixed(3)} mS/cm ${okEC ? "✅" : "⚠️ (목표와 차이: " + (EC_check-ECt).toFixed(3) + ")"}`);
   meta.textContent = metaLines.join("\n");
 
-  // 자세히 보기 박스
+  // 자세히 보기
   const dbgText = [];
   dbgText.push("[가정]");
   dbgText.push("- EC는 주입량/물량에 선형으로 비례");
@@ -400,22 +302,18 @@ function calculate(){
   dbgText.push(`- K₂SO₄ 10 wt% 용액의 K 질량분율 fK ≈ ${K_MASS_FRAC_IN_10WT.toFixed(5)}`);
   dbgText.push(`- 밀도: A=${rhoA.toFixed(3)}, B=${rhoB.toFixed(3)}, K₂SO₄=${rhoK.toFixed(3)} (단위 g/mL = mg/µL)`);
   dbgText.push("");
-  dbgText.push("[계산식 개요]");
-  dbgText.push("1) 물 스케일: alpha = (dE_A/250)/waterL, beta = (dE_B/250)/waterL, gamma = (dE_K/250)/waterL");
-  dbgText.push("2) vA + vB + vK = V_add");
-  dbgText.push("3) EC 식: alpha*vA + beta*vB + gamma*vK = 목표 EC");
-  dbgText.push("4) K:N 목표 비 적용:");
-  dbgText.push("   - A,B 질량(mg) = vA*rhoA + vB*rhoB");
-  dbgText.push("   - K0 = 질량*0.0425, N0 = 질량*0.0575");
-  dbgText.push("   - 추가 K 질량 deltaK = (tK/tN)*N0 - K0 (음수면 0)");
-  dbgText.push("   - 필요한 K₂SO₄ 용액 질량 m = deltaK / fK, 부피 vK = m / rhoK");
+  dbgText.push("[계산식 요약]");
+  dbgText.push("물 스케일: alpha=(dE_A/250)/waterL, beta=(dE_B/250)/waterL, gamma=(dE_K/250)/waterL");
+  dbgText.push("케이스 A: vB=0 → vK=cA*vA, (alpha+gamma*cA)*vA=EC_target → vA=EC_target/(alpha+gamma*cA)");
+  dbgText.push("케이스 B: vA=0 → vK=cB*vB, (beta +gamma*cB)*vB=EC_target → vB=EC_target/(beta +gamma*cB)");
+  dbgText.push("여기서 cA = max(0, rhoA*(0.0575*r - 0.0425)/(fK*rhoK)), cB 동일.");
+  dbgText.push("두 해 중 총 주입량 vA+vB+vK가 더 작은 것을 선택.");
   dbgText.push("");
-  dbgText.push("[대입값]");
-  dbgText.push(`waterL=${waterL}, EC_target=${ECt}, V_add=${Vadd}`);
-  dbgText.push(`dE_A=${dEA}, dE_B=${dEB}, dE_K=${dEK}`);
-  dbgText.push(`tK=${tK}, tN=${tN}`);
-  dbgText.push(`alpha=${alpha.toFixed(6)}, beta=${beta.toFixed(6)}, gamma=${gamma.toFixed(6)}`);
-  dbgText.push(`vA=${Math.max(0,vA).toFixed(3)}, vB=${Math.max(0,vB).toFixed(3)}, vK=${Math.max(0,vK).toFixed(3)}`);
+  dbgText.push("[대입값/결과]");
+  dbgText.push(`waterL=${waterL}, EC_target=${ECt}`);
+  dbgText.push(`dE_A=${dEA}, dE_B=${dEB}, dE_K=${dEK} → alpha=${alpha.toFixed(6)}, beta=${beta.toFixed(6)}, gamma=${gamma.toFixed(6)}`);
+  dbgText.push(`tK=${tK}, tN=${tN}, r=${r.toFixed(6)}`);
+  dbgText.push(`vA=${Math.max(0,vA).toFixed(3)}, vB=${Math.max(0,vB).toFixed(3)}, vK=${Math.max(0,vK).toFixed(3)}, Vtotal=${Math.max(0,Vtotal).toFixed(3)}`);
   dbgText.push(`K0=${K0.toFixed(4)} mg, N0=${N0.toFixed(4)} mg, K_added=${K_added.toFixed(4)} mg`);
   dbgText.push(`K_final=${K_final.toFixed(4)} mg, N_final=${N_final.toFixed(4)} mg`);
   dbgText.push(`K:N now=${safeRatio(ratio_now)}, K:N final=${safeRatio(ratio_final)}, target=${ratio_target.toFixed(3)}`);
@@ -431,22 +329,17 @@ function safeRatio(r){
   if(!Number.isFinite(r)) return "NaN";
   return r.toFixed(3);
 }
-function signed(x){
-  const s = x>=0 ? "+" : "";
-  return s + x.toFixed(3);
-}
 
-// ----- 이벤트 -----
+// 이벤트
 document.getElementById("btnCalc").addEventListener("click", calculate);
 window.addEventListener("load", ()=>{
   loadInputs();
 });
 
 // 입력 변경 시 자동 저장
-for(const id of ["waterL","targetEC","totalAdd","dEA","dEB","dEK","tK","tN","rhoA","rhoB","rhoK"]){
+for(const id of ["waterL","targetEC","dEA","dEB","dEK","tK","tN","rhoA","rhoB","rhoK"]){
   const el = document.getElementById(id);
   el.addEventListener("change", saveInputs);
-  el.addEventListener("input", ()=>{ /* no-op live */ });
 }
 </script>
 </body>
