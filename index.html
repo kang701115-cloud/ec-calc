@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액 배합 계산기 </title>
+<title>양액 계산기 </title>
 <style>
 :root{ --brand:#007BFF; --brand-dark:#0056b3; --card-w: 760px; }
 *{box-sizing:border-box}
@@ -73,7 +73,7 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
     <h2>양액만</h2>
     <div class="row">
       <div>
-        <label for="VbatchS">배치 부피 (L)</label>
+        <label for="VbatchS">배합 용량 (L)</label>
         <input type="number" id="VbatchS" step="0.1" placeholder="예: 2, 20">
       </div>
       <div>
@@ -83,7 +83,7 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
     </div>
     <div class="row">
       <div>
-        <label for="dE_AB_500S">AB 500 µL → EC 증가 (mS/cm)</label>
+        <label for="dE_AB_500S">AB 각 250 µL → EC 증가 (mS/cm)</label>
         <input type="number" id="dE_AB_500S" step="0.01" placeholder="예: 0.80">
       </div>
     </div>
@@ -97,7 +97,7 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
     <h2>칼륨 보충</h2>
     <div class="row">
       <div>
-        <label for="Vbatch">배치 부피 (L)</label>
+        <label for="Vbatch">배합 용량 (L)</label>
         <input type="number" id="Vbatch" step="0.1" placeholder="예: 2, 20">
       </div>
       <div>
@@ -108,7 +108,7 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
 
     <div class="row">
       <div>
-        <label for="dE_AB_500">AB 500 µL → EC 증가 (mS/cm)</label>
+        <label for="dE_AB_500">AB 각 250 µL → EC 증가 (mS/cm)</label>
         <input type="number" id="dE_AB_500" step="0.01" placeholder="예: 0.80">
       </div>
       <div>
@@ -142,7 +142,7 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
     </details>
   </div>
 
-  <div class="footer">입력값은 브라우저에 저장됨.</div>
+  <div class="footer"></div>
 </div>
 
 <script>
@@ -329,3 +329,4 @@ $("modeSwitch").addEventListener("change", (e)=> applyModeUI(e.target.checked));
 </script>
 </body>
 </html>
+
