@@ -8,9 +8,12 @@
 :root{ --brand:#007BFF; --brand-dark:#0056b3; --card-w: 760px; }
 *{box-sizing:border-box}
 body{ font-family: Arial, sans-serif; background:#f7f8fa; margin:0; padding:24px; text-align:center; }
-h1{color:var(--brand); font-size:2.1rem; margin:0 0 18px}
+h1{color:var(--brand); font-size:2.1rem; margin:0 0 12px}
 .wrap{max-width:var(--card-w); margin:0 auto}
-.card{ background:#fff; padding:20px; margin:16px auto; border-radius:14px; box-shadow:0 6px 16px rgba(0,0,0,.06); text-align:left; font-size:1.06rem; }
+
+.card{ background:#fff; padding:20px; margin:16px auto; border-radius:14px;
+box-shadow:0 6px 16px rgba(0,0,0,.06); text-align:left; font-size:1.06rem;}
+
 .card h2{margin:0 0 10px; font-size:1.22rem; color:#222}
 label{display:block; margin-top:12px; font-weight:700}
 .row{display:flex; gap:12px; flex-wrap:wrap}
@@ -23,65 +26,81 @@ input{ width:100%; padding:12px; margin-top:6px; border:1px solid #d7d7d7; borde
 .bad{color:#b00020; font-weight:700}
 .footer{font-size:.9rem; color:#666; margin-top:16px}
 
-/* Floating controls (우측 상단 고정) */
-.floating{
-  position:fixed; top:16px; right:16px; z-index:1000;
-  display:flex; flex-direction:column; gap:8px; align-items:flex-end;
+/* toggle wrapper reposition */
+.control-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  justify-content:center;
+  align-items:center;
+  margin: 0 auto 12px;
+  max-width: var(--card-w);
 }
+
+/* mini toggle box */
 .float-box{
   display:flex; align-items:center; gap:8px;
   background:#ffffffd9; backdrop-filter:saturate(180%) blur(6px);
   border:1px solid #e7e7e7; border-radius:999px; padding:6px 10px;
   box-shadow:0 4px 10px rgba(0,0,0,.06);
 }
+
+/* mode labels */
 .mode-chip{font-weight:700; color:#274690; background:#eef6ff; padding:4px 8px; border-radius:999px; font-size:.86rem}
 .mode-chip.inactive{opacity:.55}
 
-/* Small switches (기존의 절반 크기) */
+/* switch (half size) */
 .switch{position:relative; display:inline-block; width:32px; height:16px}
 .switch input{opacity:0; width:0; height:0}
 .slider{
-  position:absolute; cursor:pointer; inset:0; background:#cfe2ff; transition:.2s; border-radius:999px
-}
+  position:absolute; cursor:pointer; inset:0; background:#cfe2ff; transition:.2s; border-radius:999px}
 .slider:before{
   position:absolute; content:""; height:12px; width:12px; left:2px; top:2px;
-  background:#fff; transition:.2s; border-radius:50%; box-shadow:0 1px 4px rgba(0,0,0,.15)
-}
+  background:#fff; transition:.2s; border-radius:50%; box-shadow:0 1px 4px rgba(0,0,0,.15)}
 input:checked + .slider{background:#bcd0ff}
 input:checked + .slider:before{transform:translateX(16px)}
 
-/* Table */
 table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:1.0rem}
 th, td{ border:1px solid #eee; padding:10px 8px; text-align:right }
 th{ background:#f3f6ff; color:#123}
 td:first-child, th:first-child{ text-align:left }
+
 details{margin-top:10px}
-details > summary{cursor:pointer; user-select:none; padding:8px 10px; background:#f0f4ff; border:1px solid #d9e2ff; border-radius:10px; color:#274690; font-weight:700}
+details > summary{
+  cursor:pointer; user-select:none; padding:8px 10px;
+  background:#f0f4ff; border:1px solid #d9e2ff;
+  border-radius:10px; color:#274690; font-weight:700}
 .details-body{padding:10px 2px; font-size:.98rem; color:#333; white-space:pre-line}
 .hidden{display:none}
+
+/* 모바일 대응 */
+@media (max-width:480px){
+  body{padding:14px}
+  table{font-size:0.92rem}
+}
 </style>
 </head>
+
 <body>
-<!-- 우측 상단: 모드 스위치 + 단위 토글 -->
-<div class="floating">
+
+<h1>양액 배합 계산기</h1>
+
+<!-- ✅ 제목 아래로 이동한 컨트롤 -->
+<div class="control-wrap">
   <div class="float-box" title="모드 전환">
     <span id="chipSimple" class="mode-chip">양액만</span>
-    <label class="switch">
-      <input id="modeSwitch" type="checkbox"/>
-      <span class="slider"></span>
-    </label>
+    <label class="switch"><input id="modeSwitch" type="checkbox"/><span class="slider"></span></label>
     <span id="chipK" class="mode-chip inactive">칼륨 보충</span>
   </div>
 
-  <div class="float-box" title="단위 전환 (µL ↔ mL)">
+  <div class="float-box" title="µL ↔ mL">
     <span class="mode-chip" id="unitLabelLeft">µL</span>
-    <label class="switch">
-      <input id="unitSwitch" type="checkbox"/>
-      <span class="slider"></span>
-    </label>
+    <label class="switch"><input id="unitSwitch" type="checkbox"/><span class="slider"></span></label>
     <span class="mode-chip inactive" id="unitLabelRight">mL</span>
   </div>
 </div>
+
+<div class="wrap">
 
 <h1>양액 배합 계산기</h1>
 <div class="wrap">
@@ -367,3 +386,4 @@ $("unitSwitch").addEventListener("change", e=> { applyUnitUI(e.target.checked); 
 </script>
 </body>
 </html>
+
