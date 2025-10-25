@@ -16,26 +16,31 @@ label{display:block; margin-top:12px; font-weight:700}
 .row{display:flex; gap:12px; flex-wrap:wrap}
 .row > div{flex:1 1 220px}
 input{ width:100%; padding:12px; margin-top:6px; border:1px solid #d7d7d7; border-radius:10px; font-size:1.05rem; background:#fff; }
-small.hint{display:block; font-size:.9rem; color:#666; margin-top:6px}
 .btn{ margin-top:16px; padding:13px 16px; width:100%; background:var(--brand); color:#fff; border:none; border-radius:10px; cursor:pointer; font-size:1.08rem; }
 .btn:hover{background:var(--brand-dark)}
-.result{margin-top:14px; font-weight:700; color:#222; font-size:1.06rem; white-space:pre-line; word-break:keep-all}
+.result{margin-top:14px; font-weight:700; color:#222; font-size:1.06rem}
 .meta{font-size:.96rem; color:#333; white-space:pre-line; margin-top:10px}
 .bad{color:#b00020; font-weight:700}
 .ok{color:#0a7a0a; font-weight:700}
 .footer{font-size:.9rem; color:#666; margin-top:16px}
 
-/* Toggle */
-.mode-toggle{display:flex; justify-content:center; gap:10px; margin:10px 0 0}
+/* Floating toggle (우측 상단 고정) */
+.floating-toggle{
+  position:fixed; top:16px; right:16px; z-index:1000;
+  display:flex; align-items:center; gap:8px;
+  background:#ffffffd9; backdrop-filter:saturate(180%) blur(6px);
+  border:1px solid #e7e7e7; border-radius:999px; padding:6px 10px; box-shadow:0 4px 10px rgba(0,0,0,.06);
+}
+.mode-chip{font-weight:700; color:#274690; background:#eef6ff; padding:4px 8px; border-radius:999px; font-size:.88rem}
+.mode-chip.inactive{opacity:.6}
+
+/* Toggle switch */
 .switch{position:relative; display:inline-block; width:64px; height:32px}
 .switch input{opacity:0; width:0; height:0}
 .slider{position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#cfe2ff; transition:.2s; border-radius:999px}
 .slider:before{position:absolute; content:""; height:26px; width:26px; left:4px; top:3px; background:white; transition:.2s; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,.15)}
 input:checked + .slider{background:#bcd0ff}
 input:checked + .slider:before{transform:translateX(32px)}
-.mode-labels{display:flex; justify-content:space-between; gap:10px; font-weight:700; color:#274690; margin-top:6px}
-.mode-labels span{flex:1; text-align:center; padding:4px 8px; border-radius:10px; background:#eef6ff}
-.active-label{background:#dfeaff !important;}
 
 /* Table */
 table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:1.0rem}
@@ -46,78 +51,65 @@ hr.sep{border:none; border-top:1px solid #eee; margin:14px 0}
 details{margin-top:10px}
 details > summary{cursor:pointer; user-select:none; padding:8px 10px; background:#f0f4ff; border:1px solid #d9e2ff; border-radius:10px; color:#274690; font-weight:700}
 .details-body{padding:10px 2px; font-size:.98rem; color:#333; white-space:pre-line}
-.pill{display:inline-flex; gap:8px; align-items:center; margin-top:8px; background:#eef6ff; color:#134d9a; padding:8px 12px; border-radius:999px; font-size:.92rem}
-
 .hidden{display:none}
 </style>
 </head>
 <body>
-<h1>양액 배합 계산기 v2</h1>
+<!-- 헤더 -->
+<div class="floating-toggle" title="클릭하여 모드 전환">
+  <span id="chipSimple" class="mode-chip">양액만</span>
+  <label class="switch">
+    <input id="modeSwitch" type="checkbox"/>
+    <span class="slider"></span>
+  </label>
+  <span id="chipK" class="mode-chip inactive">칼륨 보충</span>
+</div>
+
+<h1>양액 배합 계산기</h1>
 <div class="wrap">
 
-  <!-- 모드 토글 -->
-  <div class="card">
-    <h2>모드 선택</h2>
-    <div class="mode-toggle">
-      <label class="switch">
-        <input id="modeSwitch" type="checkbox"/>
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div class="mode-labels">
-      <span id="labelSimple" class="active-label">양액만 넣는 모드</span>
-      <span id="labelK">칼륨 보충 모드</span>
-    </div>
-    <small class="hint"></small>
-  </div>
-
-  <!-- 양액만 모드 입력 -->
+  <!-- 양액만 모드 -->
   <div class="card" id="cardSimple">
-    <h2>양액만 넣는 모드</h2>
+    <h2>양액만</h2>
     <div class="row">
       <div>
         <label for="VbatchS">배치 부피 (L)</label>
         <input type="number" id="VbatchS" step="0.1" placeholder="예: 2, 20">
       </div>
       <div>
-        <label for="ECtS">목표 EC (mS/cm, 1 L 기준)</label>
+        <label for="ECtS">목표 EC (mS/cm)</label>
         <input type="number" id="ECtS" step="0.01" placeholder="예: 1.20">
       </div>
     </div>
     <div class="row">
       <div>
-        <label for="dE_AB_500S">AB 혼합 500 µL → EC 증가 (mS/cm)</label>
+        <label for="dE_AB_500S">AB 500 µL → EC 증가 (mS/cm)</label>
         <input type="number" id="dE_AB_500S" step="0.01" placeholder="예: 0.80">
-        <small class="hint">A와 B는 항상 동량. 이 값은 “두 개 합쳐 500 µL 주입 시”의 EC 증가.</small>
       </div>
     </div>
     <button class="btn" id="btnCalcS">계산하기</button>
     <div class="result" id="resultS"></div>
-    <hr class="sep">
     <div class="meta" id="metaS"></div>
   </div>
 
-  <!-- 칼륨 보충 모드 입력 -->
+  <!-- 칼륨 보충 모드 -->
   <div class="card hidden" id="cardK">
-    <h2>칼륨 보충 모드</h2>
+    <h2>칼륨 보충</h2>
     <div class="row">
       <div>
         <label for="Vbatch">배치 부피 (L)</label>
         <input type="number" id="Vbatch" step="0.1" placeholder="예: 2, 20">
-        <small class="hint">이번에 실제로 만들 총 용액의 부피(리터).</small>
       </div>
       <div>
-        <label for="ECt">목표 EC (mS/cm, 1 L 기준)</label>
+        <label for="ECt">목표 EC (mS/cm)</label>
         <input type="number" id="ECt" step="0.01" placeholder="예: 1.20">
-        <small class="hint">EC는 리터당 목표치이므로, 배치 부피가 커져도 리터당 필요량에 배치 부피를 곱해 계산해.</small>
       </div>
     </div>
 
     <div class="row">
       <div>
-        <label for="dE_AB_500">AB 혼합 500 µL(= A 250 + B 250) → EC 증가 (mS/cm)</label>
+        <label for="dE_AB_500">AB 500 µL → EC 증가 (mS/cm)</label>
         <input type="number" id="dE_AB_500" step="0.01" placeholder="예: 0.80">
-        <small class="hint">A와 B는 항상 동량. 이 값은 “두 개 합쳐 500 µL 주입 시”의 EC 증가.</small>
       </div>
       <div>
         <label for="dE_K_250">10% K₂SO₄ 250 µL → EC 증가 (mS/cm)</label>
@@ -127,59 +119,51 @@ details > summary{cursor:pointer; user-select:none; padding:8px 10px; background
 
     <div class="row">
       <div>
-        <label for="rhoK">10% K₂SO₄ 밀도 (g/mL = mg/µL)</label>
+        <label for="rhoK">10% K₂SO₄ 밀도 (g/mL)</label>
         <input type="number" id="rhoK" step="0.001" value="1.00">
       </div>
       <div>
-        <label for="tK">목표 K 부분</label>
+        <label for="tK">목표 K</label>
         <input type="number" id="tK" step="0.01" placeholder="예: 1">
       </div>
       <div>
-        <label for="tN">목표 N 부분</label>
+        <label for="tN">목표 N</label>
         <input type="number" id="tN" step="0.01" placeholder="예: 1">
       </div>
     </div>
-    <small class="hint">
-      고정 가정: AB 혼합 밀도 = <b>1.21 g/mL</b> (= mg/µL), AB 혼합 100 mg당 N=5.75 mg, K=4.25 mg(고정).<br>
-      10 wt% K₂SO₄ 용액의 K 질량분율 ≈ 0.0448. 입력된 EC 증분값은 모두 1 L 기준.
-    </small>
 
     <button class="btn" id="btnCalc">계산하기</button>
     <div class="result" id="result"></div>
-    <hr class="sep">
     <div class="meta" id="meta"></div>
 
     <details>
-      <summary>자세히 보기 (가정·계산식·대입값)</summary>
+      <summary>자세히</summary>
       <div class="details-body" id="debugBox"></div>
     </details>
-
-    <div class="pill">ℹ️ EC는 주입량/물량에 선형, 조성은 질량 기준(밀도 사용)으로 선형 가정.</div>
   </div>
 
-  <div class="footer">입력값은 브라우저에 자동 저장됨(localStorage).</div>
+  <div class="footer">입력값은 브라우저에 저장됨.</div>
 </div>
 
 <script>
 "use strict";
 
 /* ===== 고정 상수 ===== */
-const RHO_AB = 1.21; // g/mL = mg/µL (AB 혼합 밀도)
+const RHO_AB = 1.21; // g/mL (AB 혼합 밀도)
 const ATOMIC = { K: 39.0983, S: 32.065, O: 15.999 };
 const M_K2SO4 = 2*ATOMIC.K + ATOMIC.S + 4*ATOMIC.O;
-const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4; // ≈0.448
-const F_K = 0.10 * MASSFRAC_K_IN_K2SO4;             // 10 wt% 용액 내 K 질량비 ≈ 0.0448
+const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4; // ≈0.4487
+const F_K = 0.10 * MASSFRAC_K_IN_K2SO4;             // 10% 용액 내 K 질량비 ≈ 0.04487
 
-/* ===== 공용 유틸 ===== */
-function $(id){ return document.getElementById(id); }
-function getNum(id){ const v=parseFloat($(id).value); return Number.isFinite(v)? v : NaN; }
-function round1(x){ return Math.round(x*10)/10; }
-function fmtUL(uL){ const mL = uL/1000; return `${uL.toFixed(1)} µL (${round1(mL).toFixed(1)} mL)`; }
-function setHTML(id, html){ $(id).innerHTML = html; }
-function setText(id, txt){ $(id).textContent = txt; }
-function warn(msg){ return `<span class="bad">${msg}</span>`; }
+/* ===== 유틸 ===== */
+const $ = (id)=> document.getElementById(id);
+const getNum = (id)=> { const v = parseFloat($(id).value); return Number.isFinite(v)? v : NaN; };
+const round1 = (x)=> Math.round(x*10)/10;
+const setHTML = (id, html)=> $(id).innerHTML = html;
+const setText = (id, txt)=> $(id).textContent = txt;
+const warn = (msg)=> `<span class="bad">${msg}</span>`;
 
-/* ===== 저장 키 ===== */
+/* ===== 저장키 ===== */
 const KEY_SIMPLE = "nutri_calc_simple_v2";
 const KEY_KMODE  = "nutri_calc_kmode_v2";
 const KEY_MODE   = "nutri_calc_mode_v2"; // false=simple, true=K
@@ -188,9 +172,9 @@ const KEY_MODE   = "nutri_calc_mode_v2"; // false=simple, true=K
 function applyModeUI(isK){
   $("cardSimple").classList.toggle("hidden",  isK);
   $("cardK").classList.toggle("hidden",      !isK);
-  $("labelSimple").classList.toggle("active-label", !isK);
-  $("labelK").classList.toggle("active-label",      isK);
   $("modeSwitch").checked = !!isK;
+  $("chipSimple").classList.toggle("inactive", !!isK);
+  $("chipK").classList.toggle("inactive",     !isK);
   localStorage.setItem(KEY_MODE, JSON.stringify(!!isK));
 }
 
@@ -212,7 +196,7 @@ function loadK(){
   try{ const d=JSON.parse(raw); for(const k of Object.keys(d)){ if($(k) && typeof d[k]==="number" && !Number.isNaN(d[k])) $(k).value=d[k]; } }catch(e){}
 }
 
-/* ===== 양액만 모드 계산 ===== */
+/* ===== 양액만 모드 ===== */
 function calcSimple(){
   const Vbatch = getNum("VbatchS");
   const ECt    = getNum("ECtS");
@@ -220,16 +204,16 @@ function calcSimple(){
   const outId  = "resultS"; const metaId="metaS";
   setText(outId, ""); setText(metaId, "");
 
-  if([Vbatch,ECt,dE].some(v=>!Number.isFinite(v) || v<0)) { setHTML(outId, warn("값을 모두 올바르게 입력해줘.")); return; }
-  if(Vbatch===0){ setHTML(outId, warn("배치 부피는 0일 수 없어.")); return; }
-  if(dE===0){ setHTML(outId, warn("AB 500µL 주입 시 EC 증가가 0이면 계산 불가.")); return; }
+  if([Vbatch,ECt,dE].some(v=>!Number.isFinite(v) || v<0)) { setHTML(outId, warn("입력값 확인.")); return; }
+  if(Vbatch===0){ setHTML(outId, warn("배치 부피는 0 불가.")); return; }
+  if(dE===0){ setHTML(outId, warn("AB 500 µL의 EC 증가가 0.")); return; }
 
-  const sAB = dE/500; // 1 µL당 mS/cm
-  const vAB_perL = ECt / sAB;      // 1 L 당 AB 총 µL
+  const sAB = dE/500;          // 1 µL당 mS/cm
+  const vAB_perL = ECt / sAB;  // 1 L 당 AB 총 µL
   const vAB_total = vAB_perL * Vbatch;
   const vA_total = vAB_total/2; const vB_total=vAB_total/2;
 
-  // 표 출력
+  // 표
   const html=`
   <table>
     <thead><tr><th>항목</th><th>주입량 (µL)</th><th>주입량 (mL)</th></tr></thead>
@@ -241,13 +225,13 @@ function calcSimple(){
   </table>`;
   setHTML(outId, html);
 
-  const EC_calc = (dE/500)*vAB_perL; // 검증: 1 L 기준
-  setText(metaId, `달성 EC(1 L 기준) = ${EC_calc.toFixed(3)} mS/cm  /  목표 EC = ${ECt.toFixed(3)}  (차이 ${(EC_calc-ECt>=0?'+':'')}${(EC_calc-ECt).toFixed(3)})`);
+  const EC_calc = (dE/500)*vAB_perL; // 검증 (1 L 기준)
+  setText(metaId, `달성 EC = ${EC_calc.toFixed(3)} mS/cm / 목표 = ${ECt.toFixed(3)} (Δ ${(EC_calc-ECt>=0?'+':'')}${(EC_calc-ECt).toFixed(3)})`);
 
   saveSimple();
 }
 
-/* ===== 칼륨 보충 모드 계산 ===== */
+/* ===== 칼륨 보충 모드 ===== */
 function calcK(){
   const Vbatch   = getNum("Vbatch");
   const ECt      = getNum("ECt");
@@ -259,19 +243,19 @@ function calcK(){
 
   setText("result", ""); setText("meta", ""); setText("debugBox", "");
 
-  if([Vbatch,ECt,dE_AB_500,dE_K_250,rhoK,tK,tN].some(v=>!Number.isFinite(v) || v<0)) { setHTML("result", warn("값을 모두 올바르게 입력해줘.")); return; }
-  if(Vbatch===0){ setHTML("result", warn("배치 부피는 0일 수 없어.")); return; }
-  if(tK===0 || tN===0){ setHTML("result", warn("목표 비의 각 항은 0보다 커야 해.")); return; }
+  if([Vbatch,ECt,dE_AB_500,dE_K_250,rhoK,tK,tN].some(v=>!Number.isFinite(v) || v<0)) { setHTML("result", warn("입력값 확인.")); return; }
+  if(Vbatch===0){ setHTML("result", warn("배치 부피는 0 불가.")); return; }
+  if(tK===0 || tN===0){ setHTML("result", warn("목표 비의 각 항은 0 초과.")); return; }
 
   const sAB   = dE_AB_500 / 500;  // AB 1µL당 mS/cm
   const gamma = dE_K_250  / 250;  // K2SO4 1µL당 mS/cm
 
   const r = tK / tN;
   const c_raw = (RHO_AB * (0.0575*r - 0.0425)) / (F_K * rhoK);
-  const c = Math.max(0, c_raw); // 음수면 K 못 줄이므로 0
+  const c = Math.max(0, c_raw); // 음수면 K 감소 불가 → 0
 
   const denom = sAB + gamma*c;
-  if(denom <= 0){ setHTML("result", warn("EC 기울기 합이 0 이하야. dE 값들을 확인해줘.")); return; }
+  if(denom <= 0){ setHTML("result", warn("EC 기울기 합이 0 이하.")); return; }
 
   const vAB_perL = ECt / denom;
   const vK_perL  = c * vAB_perL;
@@ -280,7 +264,7 @@ function calcK(){
   const vK_total  = vK_perL  * Vbatch;
   const vA_total  = vAB_total/2; const vB_total = vAB_total/2;
 
-  // 표 출력 (mL는 소수점 첫째자리 반올림)
+  // 표 (mL 소수 첫째자리 반올림)
   const html=`
   <table>
     <thead><tr><th>항목</th><th>주입량 (µL)</th><th>주입량 (mL)</th></tr></thead>
@@ -293,7 +277,7 @@ function calcK(){
   </table>`;
   setHTML("result", html);
 
-  // 메타 (K:N 변화, EC 검증)
+  // 메타 (K:N/EC 검증)
   const massAB_mg_perL = vAB_perL * RHO_AB;
   const K0_perL = massAB_mg_perL * 0.0425;
   const N0_perL = massAB_mg_perL * 0.0575;
@@ -306,59 +290,42 @@ function calcK(){
   const EC_calc_perL = sAB*vAB_perL + gamma*vK_perL;
 
   const warns=[];
-  if(c_raw<0){ warns.push("목표 K:N이 AB 고유비(≈0.739)보다 낮아. K₂SO₄로 K를 줄일 수 없어서 vK=0이 최선이야."); }
+  if(c_raw<0){ warns.push("목표 K:N이 AB 고유비(≈0.739)보다 낮음 → K₂SO₄로 K 감소 불가."); }
 
   const metaLines=[];
-  metaLines.push(`달성 EC(1 L 기준) = ${EC_calc_perL.toFixed(3)} mS/cm  /  목표 EC = ${ECt.toFixed(3)}  (차이 ${(EC_calc_perL-ECt>=0?'+':'')}${(EC_calc_perL-ECt).toFixed(3)})`);
-  metaLines.push(`K:N 현재(AB만) ≈ ${Number.isFinite(ratio_now)? ratio_now.toFixed(3):'NaN'}  /  최종(AB+K₂SO₄) ≈ ${Number.isFinite(ratio_fin)? ratio_fin.toFixed(3):'NaN'}  /  목표 = ${r.toFixed(3)}`);
-  if(warns.length) metaLines.push("⚠️ "+warns.join(" "));
+  metaLines.push(`달성 EC = ${EC_calc_perL.toFixed(3)} mS/cm / 목표 = ${ECt.toFixed(3)} (Δ ${(EC_calc_perL-ECt>=0?'+':'')}${(EC_calc_perL-ECt).toFixed(3)})`);
+  metaLines.push(`K:N 현재 ≈ ${Number.isFinite(ratio_now)? ratio_now.toFixed(3):'NaN'} / 최종 ≈ ${Number.isFinite(ratio_fin)? ratio_fin.toFixed(3):'NaN'} / 목표 = ${r.toFixed(3)}`);
+  if(warns.length) metaLines.push("⚠ " + warns.join(" "));
   setText("meta", metaLines.join("\n"));
 
-  // 디버그 상세
+  // 자세히
   const dbg=[];
-  dbg.push("[가정]");
-  dbg.push("- A:B는 항상 동량 (AB 혼합)");
-  dbg.push("- AB 혼합 밀도 = 1.21 g/mL (= mg/µL)");
-  dbg.push("- AB 혼합 100 mg당 N=5.75 mg, K=4.25 mg");
-  dbg.push(`- 10 wt% K₂SO₄ 용액 내 K 질량분율 fK ≈ ${F_K.toFixed(5)}`);
-  dbg.push("- EC 증분값은 모두 1 L 기준에서 정의됨");
-  dbg.push("");
-  dbg.push("[계산식 요약]");
-  dbg.push("sAB = dE_AB_500 / 500 (AB 1µL당 EC)");
-  dbg.push("gamma = dE_K_250 / 250 (K₂SO₄ 1µL당 EC)");
-  dbg.push("r = tK / tN");
-  dbg.push("c_raw = (1.21*(0.0575*r - 0.0425)) / (fK*rhoK),  c = max(0, c_raw)");
-  dbg.push("EC: (sAB + gamma*c) * vAB_perL = EC_target  →  vAB_perL = EC_target / (sAB + gamma*c),  vK_perL = c*vAB_perL");
-  dbg.push("배치 부피 반영: vAB_total = vAB_perL * Vbatch, vK_total = vK_perL * Vbatch");
-  dbg.push("");
-  dbg.push("[배치 총량]");
-  dbg.push(`AB_total=${vAB_total.toFixed(1)} µL (A=${(vA_total).toFixed(1)}, B=${(vB_total).toFixed(1)}), K_total=${Math.max(0,vK_total).toFixed(1)} µL`);
-  dbg.push(`V_total=${(vA_total+vB_total+Math.max(0,vK_total)).toFixed(1)} µL`);
+  dbg.push("[가정] AB 밀도 1.21 g/mL, AB 100 mg당 N 5.75 mg, K 4.25 mg");
+  dbg.push(`[상수] K 질량분율(10% K₂SO₄) fK ≈ ${F_K.toFixed(5)}`);
+  dbg.push("[식] vAB = EC_target / (sAB + gamma*c), vK = c*vAB");
+  dbg.push(`[값] sAB=${(dE_AB_500/500).toFixed(6)}, gamma=${(dE_K_250/250).toFixed(6)}, c=${c.toFixed(6)}`);
+  dbg.push(`[1 L] vAB=${vAB_perL.toFixed(3)} µL, vK=${vK_perL.toFixed(3)} µL`);
   setText("debugBox", dbg.join("\n"));
 
   saveK();
 }
 
-/* ===== 이벤트 바인딩 ===== */
+/* ===== 이벤트 ===== */
 $("btnCalcS").addEventListener("click", calcSimple);
 $("btnCalc").addEventListener("click", calcK);
-
-// 입력 자동 저장
 ["VbatchS","ECtS","dE_AB_500S"].forEach(id=> $(id).addEventListener("change", saveSimple));
 ["Vbatch","ECt","dE_AB_500","dE_K_250","rhoK","tK","tN"].forEach(id=> $(id).addEventListener("change", saveK));
 
-// 모드 토글
+// 모드 전환
 $("modeSwitch").addEventListener("change", (e)=> applyModeUI(e.target.checked));
 
-// 초기 로드: 저장된 모드·값 복원
+// 초기 로드
 (function init(){
   const rawMode = localStorage.getItem(KEY_MODE);
   const isK = rawMode? JSON.parse(rawMode) : false;
   applyModeUI(isK);
-  loadSimple();
-  loadK();
+  loadSimple(); loadK();
 })();
 </script>
 </body>
 </html>
-
