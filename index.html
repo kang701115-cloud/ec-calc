@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>최적화 기반 양액 계산기</title>
+<title> 양액 계산기</title>
 
 <style>
 :root{ --brand:#007bff; --brand-dark:#0056b3; --card-w:900px; }
@@ -117,17 +117,18 @@ const AB_Ca = 18.50;
 const AB_Mg = 4.13;
 
 /* ------------------ MgSO₄ / Ca(NO₃)₂ / K₂SO₄ ------------------ */
-const AT = { Mg:24.305, Ca:40.078, O:15.999, N:14.007 };
+const AT = { Mg:24.305, Ca:40.078, O:15.999 };
 const M_MgO = AT.Mg + AT.O;
 const M_CaO = AT.Ca + AT.O;
 
 const Mg_frac = AT.Mg / M_MgO;
 const Ca_frac = AT.Ca / M_CaO;
 
+/* 10% 용액 기준 원소 함량 (mg/mL) */
 const mgMg_per_mL = 0.16 * Mg_frac * 0.10 * 1000;
 const mgCa_per_mL = 0.26 * Ca_frac * 0.10 * 1000;
 
-/* K₂SO₄ */
+/* K₂SO₄ 10% 용액 원소 함량 */
 const MW_K2SO4 = 174.259;
 const K_frac = (39.0983*2) / MW_K2SO4;
 const mgK_per_mL = K_frac * 0.10 * 1000;
@@ -174,7 +175,7 @@ function KN_error(vAB, vK){
 }
 
 /* ------------------ Golden-section search ------------------ */
-function minimize_vK(vMin, vMax, f){
+function minimize(vMin, vMax, f){
   const phi = (1+Math.sqrt(5))/2;
   let a=vMin, b=vMax;
   let c=b-(b-a)/phi;
@@ -216,56 +217,66 @@ document.getElementById("calc").onclick = ()=>{
   const CaT = parseFloat(CaT_el.value);
   const MgT = parseFloat(MgT_el.value);
 
-  /* vK → vAB,vMg,vCa 구하는 함수 */
+  /* vK의 upper bound = EC 기반 */
+  const max_vK = Math.max(1, (ECt*V)/dK * 0.95);
+
   function solveFor(vK){
+    const RHS_EC = ECt*V - dK*vK;  // 오른쪽
+    if(RHS_EC < 0) return [ -1, -1, -1 ];
+
     const B = [
-      ECt,
-      CaT * V,
-      MgT * V
+      RHS_EC,
+      CaT * V * 1000,
+      MgT * V * 1000
     ];
     const A = [
-      [ dAB/V,   dMg/V,    dCa/V ],
-      [ AB_Ca/1000, 0, mgCa_per_mL/1000 ],
-      [ AB_Mg/1000, mgMg_per_mL/1000, 0 ]
+      [ dAB,   dMg,    dCa ],
+      [ AB_Ca, 0,      mgCa_per_mL ],
+      [ AB_Mg, mgMg_per_mL, 0 ]
     ];
-    A[0][0] -= dK*vK/V;
-    return solve3(A,B); // [vAB,vMg,vCa]
+    return solve3(A,B);  // [vAB, vMg, vCa]
   }
 
-  /* vK → 오차 함수 */
   function F(vK){
     const [vAB,vMg,vCa] = solveFor(vK);
     if(vAB<0||vMg<0||vCa<0) return 1e12;
     return KN_error(vAB,vK);
   }
 
-  const vK_best = minimize_vK(0,200000,F);
+  const vK_best = minimize(0,max_vK,F);
   const [vAB_best,vMg_best,vCa_best] = solveFor(vK_best);
 
+  /* 단위 변환 */
   const unit = unit_el.checked ? 1/1000 : 1;
   const uname = unit_el.checked ? "mL" : "µL";
+
+  const Aamt = (vAB_best/2)*unit;
+  const Bamt = (vAB_best/2)*unit;
+  const Kamp = vK_best*unit;
+  const Mgamp = vMg_best*unit;
+  const Caamp = vCa_best*unit;
 
   document.getElementById("result").innerHTML = `
     <table>
       <tr><th>원액</th><th>주입량 (${uname})</th></tr>
-      <tr><td>A액</td><td>${((vAB_best/2)*unit).toFixed(2)}</td></tr>
-      <tr><td>B액</td><td>${((vAB_best/2)*unit).toFixed(2)}</td></tr>
-      <tr><td>K₂SO₄ 10% 용액</td><td>${(vK_best*unit).toFixed(2)}</td></tr>
-      <tr><td>MgSO₄ 10% 용액</td><td>${(vMg_best*unit).toFixed(2)}</td></tr>
-      <tr><td>Ca(NO₃)₂ 10% 용액</td><td>${(vCa_best*unit).toFixed(2)}</td></tr>
-      <tr><td><b>총합</b></td><td><b>${((vAB_best+vK_best+vMg_best+vCa_best)*unit).toFixed(2)}</b></td></tr>
+      <tr><td>A액</td><td>${Aamt.toFixed(2)}</td></tr>
+      <tr><td>B액</td><td>${Bamt.toFixed(2)}</td></tr>
+      <tr><td>K₂SO₄ 10% 용액</td><td>${Kamp.toFixed(2)}</td></tr>
+      <tr><td>MgSO₄ 10% 용액</td><td>${Mgamp.toFixed(2)}</td></tr>
+      <tr><td>Ca(NO₃)₂ 10% 용액</td><td>${Caamp.toFixed(2)}</td></tr>
+      <tr><td><b>총합</b></td><td><b>${(Aamt+Bamt+Kamp+Mgamp+Caamp).toFixed(2)}</b></td></tr>
     </table>
   `;
 
   document.getElementById("meta").textContent =
-`EC, Ca, Mg는 정확히 만족
-K:N은 가능한 한 최적으로 근사됨(최소제곱오차 기반)
+`EC, Ca, Mg는 정확하게 충족됨.
+K:N은 가능한 최적으로 근사됨.
 
 AB 성분 (mg/mL):
 N=${AB_N}, K=${AB_K}, Ca=${AB_Ca}, Mg=${AB_Mg}
 
-MgSO₄ 용액: ${mgMg_per_mL.toFixed(2)} mg Mg / mL
-Ca(NO₃)₂ 용액: ${mgCa_per_mL.toFixed(2)} mg Ca / mL
+MgSO₄ 용액: ${mgMg_per_mL.toFixed(2)} mg Mg / mL  
+Ca(NO₃)₂ 용액: ${mgCa_per_mL.toFixed(2)} mg Ca / mL  
 K₂SO₄ 용액: ${mgK_per_mL.toFixed(2)} mg K / mL`;
 };
 </script>
