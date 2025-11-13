@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액 계산기</title>
+<title>양액 계산기 (AB + K + Ca·Mg)</title>
 <style>
 :root{ --brand:#007BFF; --brand-dark:#0056b3; --card-w: 760px; }
 *{box-sizing:border-box}
@@ -26,7 +26,7 @@ input{ width:100%; padding:12px; margin-top:6px; border:1px solid #d7d7d7; borde
 .bad{color:#b00020; font-weight:700}
 .footer{font-size:.9rem; color:#666; margin-top:16px}
 
-/* Toggle positioning: 제목 아래 오른쪽 정렬 */
+/* 상단 컨트롤 */
 .control-wrap{
   display:flex;
   justify-content:flex-end;
@@ -46,10 +46,14 @@ input{ width:100%; padding:12px; margin-top:6px; border:1px solid #d7d7d7; borde
 }
 
 /* labels */
-.mode-chip{font-weight:700; color:#274690; background:#eef6ff; padding:4px 8px; border-radius:999px; font-size:.86rem}
+.mode-chip{
+  font-weight:700; color:#274690; background:#eef6ff;
+  padding:4px 8px; border-radius:999px; font-size:.86rem;
+  cursor:pointer; user-select:none;
+}
 .mode-chip.inactive{opacity:.55}
 
-/* small switch */
+/* small switch (단위용) */
 .switch{position:relative; display:inline-block; width:32px; height:16px}
 .switch input{opacity:0; width:0; height:0}
 .slider{
@@ -85,12 +89,12 @@ details > summary{
 
 <h1>양액 배합 계산기</h1>
 
-<!-- ✅ 토글 두 개: 제목 아래, 오른쪽 정렬 -->
+<!-- 상단 모드 + 단위 토글 -->
 <div class="control-wrap">
   <div class="float-box" title="모드 전환">
-    <span id="chipSimple" class="mode-chip">양액만</span>
-    <label class="switch"><input id="modeSwitch" type="checkbox"/><span class="slider"></span></label>
-    <span id="chipK" class="mode-chip inactive">칼륨 보충</span>
+    <span id="chipModeSimple" class="mode-chip">양액만</span>
+    <span id="chipModeK" class="mode-chip inactive">칼륨 보충</span>
+    <span id="chipModeCaMg" class="mode-chip inactive">Ca·Mg 보충</span>
   </div>
   <div class="float-box" title="단위 전환">
     <span class="mode-chip" id="unitLabelLeft">µL</span>
@@ -101,7 +105,7 @@ details > summary{
 
 <div class="wrap">
 
-<!-- =================== 양액만 모드 =================== -->
+  <!-- ========== 양액만 모드 ========== -->
   <div class="card" id="cardSimple">
     <h2>양액만</h2>
     <div class="row">
@@ -116,7 +120,10 @@ details > summary{
     </div>
     <div class="row">
       <div>
-        <label for="dE_AB_500S">AB 각 250 µL → EC 증가 (mS/cm)</label>
+        <label for="dE_AB_500S">
+          AB 각 250 µL (총 500 µL) → EC 증가 (mS/cm)<br>
+          <small>(1 L 물에 넣었을 때 EC 증가값)</small>
+        </label>
         <input type="number" id="dE_AB_500S" step="0.01" min="0" placeholder="예: 0.80">
       </div>
     </div>
@@ -125,7 +132,7 @@ details > summary{
     <div class="meta" id="metaS"></div>
   </div>
 
-<!-- =================== 칼륨 보충 모드 =================== -->
+  <!-- ========== 칼륨 보충 모드 ========== -->
   <div class="card hidden" id="cardK">
     <h2>칼륨 보충</h2>
     <div class="row">
@@ -141,11 +148,17 @@ details > summary{
 
     <div class="row">
       <div>
-        <label for="dE_AB_500">AB 각 250 µL → EC 증가 (mS/cm)</label>
+        <label for="dE_AB_500">
+          AB 각 250 µL (총 500 µL) → EC 증가 (mS/cm)<br>
+          <small>(1 L 물에 넣었을 때 EC 증가값)</small>
+        </label>
         <input type="number" id="dE_AB_500" step="0.01" min="0" placeholder="예: 0.80">
       </div>
       <div>
-        <label for="dE_K_250">10% K₂SO₄ 250 µL → EC 증가 (mS/cm)</label>
+        <label for="dE_K_250">
+          10% K₂SO₄ 250 µL → EC 증가 (mS/cm)<br>
+          <small>(1 L 기준)</small>
+        </label>
         <input type="number" id="dE_K_250" step="0.01" min="0" placeholder="예: 0.05">
       </div>
     </div>
@@ -175,6 +188,57 @@ details > summary{
     </details>
   </div>
 
+  <!-- ========== Ca·Mg 보충 모드 ========== -->
+  <div class="card hidden" id="cardCaMg">
+    <h2>Ca·Mg 보충</h2>
+    <div class="row">
+      <div>
+        <label for="VbatchC">배합 용량 (L)</label>
+        <input type="number" id="VbatchC" step="0.1" min="0" placeholder="예: 2, 20">
+      </div>
+      <div>
+        <label for="ECtC">목표 EC (mS/cm)</label>
+        <input type="number" id="ECtC" step="0.01" min="0" placeholder="예: 1.20">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="dE_AB_500C">
+          AB 각 250 µL (총 500 µL) → EC 증가 (mS/cm)<br>
+          <small>(1 L 물에 넣었을 때 EC 증가값)</small>
+        </label>
+        <input type="number" id="dE_AB_500C" step="0.01" min="0" placeholder="예: 0.80">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="CaTarget">목표 Ca (mg/L)</label>
+        <input type="number" id="CaTarget" step="1" min="0" placeholder="예: 150">
+      </div>
+      <div>
+        <label for="MgTarget">목표 Mg (mg/L)</label>
+        <input type="number" id="MgTarget" step="1" min="0" placeholder="예: 40">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="rhoMg">10% Mg 비료 용액 밀도 (g/mL)</label>
+        <input type="number" id="rhoMg" step="0.001" min="0" value="1.00">
+      </div>
+      <div>
+        <label for="rhoCa">10% Ca 비료 용액 밀도 (g/mL)</label>
+        <input type="number" id="rhoCa" step="0.001" min="0" value="1.00">
+      </div>
+    </div>
+
+    <button class="btn" id="btnCalcCaMg">계산하기</button>
+    <div class="result" id="resultC"></div>
+    <div class="meta" id="metaC"></div>
+  </div>
+
   <div class="footer"></div>
 </div>
 
@@ -182,37 +246,77 @@ details > summary{
 "use strict";
 
 /* ===== 상수 ===== */
+/* 기존 AB 관련 */
 const RHO_AB = 1.21;
 const ATOMIC = { K:39.0983, S:32.065, O:15.999 };
+
+/* K2SO4 관련 (기존) */
 const M_K2SO4 = 2*ATOMIC.K + ATOMIC.S + 4*ATOMIC.O;
 const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4;
 const F_K = 0.10 * MASSFRAC_K_IN_K2SO4;
 
+/* Ca/Mg 관련 상수 */
+/* AB 100 mL = 82.6 g, 그 안에 Ca = 1.85 g, Mg = 0.413 g */
+const CA_PER_ML_AB = 1.85 / 100 * 1000;  // mg/mL
+const MG_PER_ML_AB = 0.413 / 100 * 1000; // mg/mL
+
+/* 비료 포장 표기: 16% MgO + 13% S, 26% CaO */
+/* 산화물 기준에서 원소 비율로 환산 → 10 wt% 용액 기준 */
+const AT2 = { Mg:24.305, Ca:40.078, O:15.999 };
+const M_MGO = AT2.Mg + AT2.O;
+const M_CAO = AT2.Ca + AT2.O;
+const MASSFRAC_MG_IN_MGO = AT2.Mg / M_MGO;    // MgO 안의 Mg 비율
+const MASSFRAC_CA_IN_CAO = AT2.Ca / M_CAO;    // CaO 안의 Ca 비율
+
+/* 비료 고체에서 Mg, Ca 질량분율 (산화물 % 반영) */
+const MASSFRAC_MG_IN_FERT = 0.16 * MASSFRAC_MG_IN_MGO; // 16% MgO
+const MASSFRAC_CA_IN_FERT = 0.26 * MASSFRAC_CA_IN_CAO; // 26% CaO
+
+/* 10 wt% 비료 용액에서 Mg, Ca 질량분율 (용액 기준, g Mg or Ca / g 용액) */
+const MASSFRAC_MG_IN_SOL = 0.10 * MASSFRAC_MG_IN_FERT;
+const MASSFRAC_CA_IN_SOL = 0.10 * MASSFRAC_CA_IN_FERT;
+
 /* ===== 유틸 ===== */
 const $ = id => document.getElementById(id);
-const getNum = id => { const v=parseFloat($(id).value); return Number.isFinite(v)?v:NaN; };
+const getNum = id => {
+  const v=parseFloat($(id).value);
+  return Number.isFinite(v)?v:NaN;
+};
 const round1 = x => Math.round(x*10)/10;
 const setHTML = (id,html)=>$(id).innerHTML=html;
 const setText = (id,txt)=>$(id).textContent=txt;
 
-/* ===== localStorage KEY ===== */
+/* ===== 모드 관련 ===== */
 const KEY_SIMPLE="nutri_calc_simple_v2";
 const KEY_KMODE ="nutri_calc_kmode_v2";
-const KEY_MODE ="nutri_calc_mode_v2";
-const KEY_UNIT ="nutri_calc_unit_v2";
+const KEY_CAMG  ="nutri_calc_camg_v1";
+const KEY_MODE  ="nutri_calc_mode_v3";
+const KEY_UNIT  ="nutri_calc_unit_v2";
 
-/* ===== 상태 확인/적용 ===== */
-function isKMode(){ return !!JSON.parse(localStorage.getItem(KEY_MODE)||"false"); }
+const MODE_SIMPLE = 0;
+const MODE_K      = 1;
+const MODE_CAMG   = 2;
+
+function getMode(){
+  const v = parseInt(localStorage.getItem(KEY_MODE),10);
+  if(Number.isInteger(v) && v>=0 && v<=2) return v;
+  return MODE_SIMPLE;
+}
+
 function isUnitML(){ return !!JSON.parse(localStorage.getItem(KEY_UNIT)||"false"); }
 
-function applyModeUI(isK){
-  $("cardSimple").classList.toggle("hidden",isK);
-  $("cardK").classList.toggle("hidden",!isK);
-  $("modeSwitch").checked=isK;
-  $("chipSimple").classList.toggle("inactive",isK);
-  $("chipK").classList.toggle("inactive",!isK);
-  localStorage.setItem(KEY_MODE,JSON.stringify(isK));
+function applyModeUI(mode){
+  $("cardSimple").classList.toggle("hidden", mode!==MODE_SIMPLE);
+  $("cardK").classList.toggle("hidden", mode!==MODE_K);
+  $("cardCaMg").classList.toggle("hidden", mode!==MODE_CAMG);
+
+  $("chipModeSimple").classList.toggle("inactive", mode!==MODE_SIMPLE);
+  $("chipModeK").classList.toggle("inactive", mode!==MODE_K);
+  $("chipModeCaMg").classList.toggle("inactive", mode!==MODE_CAMG);
+
+  localStorage.setItem(KEY_MODE, String(mode));
 }
+
 function applyUnitUI(isML){
   $("unitSwitch").checked=isML;
   $("unitLabelLeft").classList.toggle("inactive",isML);
@@ -223,21 +327,47 @@ function applyUnitUI(isML){
 /* ===== 저장/로드 ===== */
 function loadSimple(){
   const d=JSON.parse(localStorage.getItem(KEY_SIMPLE)||"null"); if(!d) return;
-  for(const k in d) if($(k)) $(k).value=d[k];
+  for(const k in d) if($(k) && d[k]!==undefined && !Number.isNaN(d[k])) $(k).value=d[k];
 }
 function saveSimple(){
-  const d={ VbatchS:getNum("VbatchS"),ECtS:getNum("ECtS"),dE_AB_500S:getNum("dE_AB_500S") };
+  const d={
+    VbatchS:getNum("VbatchS"),
+    ECtS:getNum("ECtS"),
+    dE_AB_500S:getNum("dE_AB_500S")
+  };
   localStorage.setItem(KEY_SIMPLE,JSON.stringify(d));
 }
 function loadK(){
   const d=JSON.parse(localStorage.getItem(KEY_KMODE)||"null"); if(!d) return;
-  for(const k in d) if($(k)) $(k).value=d[k];
+  for(const k in d) if($(k) && d[k]!==undefined && !Number.isNaN(d[k])) $(k).value=d[k];
 }
 function saveK(){
-  const d={ Vbatch:getNum("Vbatch"),ECt:getNum("ECt"),
-    dE_AB_500:getNum("dE_AB_500"),dE_K_250:getNum("dE_K_250"),
-    rhoK:getNum("rhoK"),tK:getNum("tK"),tN:getNum("tN") };
+  const d={
+    Vbatch:getNum("Vbatch"),
+    ECt:getNum("ECt"),
+    dE_AB_500:getNum("dE_AB_500"),
+    dE_K_250:getNum("dE_K_250"),
+    rhoK:getNum("rhoK"),
+    tK:getNum("tK"),
+    tN:getNum("tN")
+  };
   localStorage.setItem(KEY_KMODE,JSON.stringify(d));
+}
+function loadCaMg(){
+  const d=JSON.parse(localStorage.getItem(KEY_CAMG)||"null"); if(!d) return;
+  for(const k in d) if($(k) && d[k]!==undefined && !Number.isNaN(d[k])) $(k).value=d[k];
+}
+function saveCaMg(){
+  const d={
+    VbatchC:getNum("VbatchC"),
+    ECtC:getNum("ECtC"),
+    dE_AB_500C:getNum("dE_AB_500C"),
+    CaTarget:getNum("CaTarget"),
+    MgTarget:getNum("MgTarget"),
+    rhoMg:getNum("rhoMg"),
+    rhoCa:getNum("rhoCa")
+  };
+  localStorage.setItem(KEY_CAMG,JSON.stringify(d));
 }
 
 /* ===== 단위 처리 ===== */
@@ -260,14 +390,31 @@ function tableSimple(vA,vB){
 }
 function tableK(vA,vB,vK){
   const u=unitName();
+  const vKclamp = Math.max(0,vK);
   return `
   <table>
     <thead><tr><th>항목</th><th>주입량 (${u})</th></tr></thead>
     <tbody>
       <tr><td>A액</td><td>${cell(vA)}</td></tr>
       <tr><td>B액</td><td>${cell(vB)}</td></tr>
-      <tr><td>10% K₂SO₄</td><td>${cell(Math.max(0,vK))}</td></tr>
-      <tr><td><b>합계</b></td><td><b>${cell(vA+vB+Math.max(0,vK))}</b></td></tr>
+      <tr><td>10% K₂SO₄</td><td>${cell(vKclamp)}</td></tr>
+      <tr><td><b>합계</b></td><td><b>${cell(vA+vB+vKclamp)}</b></td></tr>
+    </tbody>
+  </table>`;
+}
+function tableCaMg(vA,vB,vMg,vCa){
+  const u=unitName();
+  const vMgC = Math.max(0,vMg);
+  const vCaC = Math.max(0,vCa);
+  return `
+  <table>
+    <thead><tr><th>항목</th><th>주입량 (${u})</th></tr></thead>
+    <tbody>
+      <tr><td>A액</td><td>${cell(vA)}</td></tr>
+      <tr><td>B액</td><td>${cell(vB)}</td></tr>
+      <tr><td>10% Mg 비료 용액</td><td>${cell(vMgC)}</td></tr>
+      <tr><td>10% Ca 비료 용액</td><td>${cell(vCaC)}</td></tr>
+      <tr><td><b>합계</b></td><td><b>${cell(vA+vB+vMgC+vCaC)}</b></td></tr>
     </tbody>
   </table>`;
 }
@@ -276,53 +423,161 @@ function tableK(vA,vB,vK){
 function calcSimple(){
   const V=getNum("VbatchS"),E=getNum("ECtS"),d=getNum("dE_AB_500S");
   setHTML("resultS",""); setText("metaS","");
-  if([V,E,d].some(x=>!Number.isFinite(x)||x<0)){ setHTML("resultS","입력 확인");return; }
-  if(V===0){ setHTML("resultS","부피 0 불가");return; }
+  if([V,E,d].some(x=>!Number.isFinite(x)||x<0)){ setHTML("resultS","<span class='bad'>입력을 확인해줘</span>");return; }
+  if(V===0){ setHTML("resultS","<span class='bad'>부피 0은 불가</span>");return; }
 
-  const s=d/500, vAB=(E/s)*V;
+  const s=d/500;
+  if(s<=0){ setHTML("resultS","<span class='bad'>AB EC 증가값이 0이면 계산 불가</span>");return; }
+
+  const vAB=(E/s)*V;
   const vA=vAB/2,vB=vAB/2;
   setHTML("resultS",tableSimple(vA,vB));
+  setText("metaS",`※ AB 500 µL을 1 L 물에 넣었을 때 EC가 ${d.toFixed(2)} mS/cm 증가한다고 가정.`);
   saveSimple();
 }
 
 function calcK(){
-  const V=getNum("Vbatch"),E=getNum("ECt"),d1=getNum("dE_AB_500"),
-        d2=getNum("dE_K_250"),rho=getNum("rhoK"),tk=getNum("tK"),tn=getNum("tN");
+  const V=getNum("Vbatch"),E=getNum("ECt"),
+        d1=getNum("dE_AB_500"),
+        d2=getNum("dE_K_250"),
+        rho=getNum("rhoK"),
+        tk=getNum("tK"),tn=getNum("tN");
   setHTML("result",""); setText("meta",""); setText("debugBox","");
-  if([V,E,d1,d2,rho,tk,tn].some(x=>!Number.isFinite(x)||x<0)){ setHTML("result","입력 확인");return; }
-  if(V===0){ setHTML("result","부피 0 불가");return; }
+  if([V,E,d1,d2,rho,tk,tn].some(x=>!Number.isFinite(x)||x<0)){
+    setHTML("result","<span class='bad'>입력을 확인해줘</span>");return;
+  }
+  if(V===0){ setHTML("result","<span class='bad'>부피 0은 불가</span>");return; }
 
   const r=tk/tn;
   const s=d1/500, g=d2/250;
+  if(s<=0){ setHTML("result","<span class='bad'>AB EC 증가값이 0이면 계산 불가</span>");return; }
+
+  /* 기존 로직 유지 */
   const c=Math.max(0,(RHO_AB*(0.0575*r-0.0425))/(F_K*rho));
-  const vAB=(E/(s+g*c))*V, vK=c*(vAB/V)*V;
+  const vAB=(E/(s+g*c))*V;
+  const vK=c*vAB;
   const vA=vAB/2,vB=vAB/2;
+
   setHTML("result",tableK(vA,vB,vK));
+  setText("meta",
+`K:N 비를 ${tk.toFixed(2)}:${tn.toFixed(2)} 근처로 맞추기 위한 K₂SO₄ 보충량을 계산했어.
+입력된 EC, 밀도, 비율 가정에 따라 값이 변할 수 있음.`);
+  setText("debugBox",
+`r = K/N = ${r.toFixed(4)}
+s = AB EC 증가/µL = ${s.toExponential(4)}
+g = K₂SO₄ EC 증가/µL = ${g.toExponential(4)}
+c (AB 대비 K₂SO₄ 비) = ${c.toExponential(4)}`);
+
   saveK();
 }
 
+function calcCaMg(){
+  const V   = getNum("VbatchC"),
+        E   = getNum("ECtC"),
+        dAB = getNum("dE_AB_500C"),
+        CaT = getNum("CaTarget"),
+        MgT = getNum("MgTarget"),
+        rhoMg = getNum("rhoMg"),
+        rhoCa = getNum("rhoCa");
+
+  setHTML("resultC",""); setText("metaC","");
+
+  if([V,E,dAB,CaT,MgT,rhoMg,rhoCa].some(x=>!Number.isFinite(x)||x<0)){
+    setHTML("resultC","<span class='bad'>입력을 확인해줘</span>");return;
+  }
+  if(V===0){ setHTML("resultC","<span class='bad'>부피 0은 불가</span>");return; }
+
+  const s = dAB/500;
+  if(s<=0){ setHTML("resultC","<span class='bad'>AB EC 증가값이 0이면 계산 불가</span>");return; }
+
+  /* 1) EC를 기준으로 AB 주입량 계산 (양액만 모드와 동일) */
+  const vAB = (E/s)*V;  // µL (A+B 합)
+  const vA  = vAB/2;
+  const vB  = vAB/2;
+  const vAB_mL = vAB / 1000;
+
+  /* 2) AB에서 공급되는 Ca, Mg 총량 */
+  const Ca_AB_total_mg = vAB_mL * CA_PER_ML_AB;
+  const Mg_AB_total_mg = vAB_mL * MG_PER_ML_AB;
+
+  /* 3) 목표 총량 (mg) */
+  const Ca_target_total_mg = CaT * V;
+  const Mg_target_total_mg = MgT * V;
+
+  /* 4) 10 wt% 용액 1 mL당 Mg, Ca 함량 (mg/mL) */
+  const mgMg_per_mL = MASSFRAC_MG_IN_SOL * rhoMg * 1000; // g/g × g/mL × 1000
+  const mgCa_per_mL = MASSFRAC_CA_IN_SOL * rhoCa * 1000;
+
+  /* 5) 부족분 (음수면 0으로 처리) */
+  const dCa_mg = Math.max(0, Ca_target_total_mg - Ca_AB_total_mg);
+  const dMg_mg = Math.max(0, Mg_target_total_mg - Mg_AB_total_mg);
+
+  /* 6) 필요한 10% 용액 부피 (mL) */
+  const vCa_mL = dCa_mg / mgCa_per_mL;
+  const vMg_mL = dMg_mg / mgMg_per_mL;
+
+  const vCa_uL = vCa_mL * 1000;
+  const vMg_uL = vMg_mL * 1000;
+
+  setHTML("resultC", tableCaMg(vA,vB,vMg_uL,vCa_uL));
+
+  const Ca_AB_per_L = Ca_AB_total_mg / V;
+  const Mg_AB_per_L = Mg_AB_total_mg / V;
+
+  const lines = [];
+
+  lines.push(`AB는 EC 기준으로 총 ${vAB_mL.toFixed(2)} mL 투입 (A, B 각각 ${ (vAB_mL/2).toFixed(2) } mL).`);
+  lines.push(`AB만으로 공급되는 Ca ≈ ${Ca_AB_per_L.toFixed(1)} mg/L, Mg ≈ ${Mg_AB_per_L.toFixed(1)} mg/L.`);
+
+  if(dCa_mg === 0 && dMg_mg === 0){
+    lines.push("");
+    lines.push("※ AB만으로도 목표 Ca, Mg 농도를 이미 만족하거나 초과해서 추가 보충량은 0으로 계산됨.");
+  }else{
+    lines.push("");
+    lines.push(`목표 Ca: ${CaT.toFixed(1)} mg/L → 부족분: ${(dCa_mg/V).toFixed(1)} mg/L`);
+    lines.push(`목표 Mg: ${MgT.toFixed(1)} mg/L → 부족분: ${(dMg_mg/V).toFixed(1)} mg/L`);
+  }
+
+  lines.push("");
+  lines.push(`10% Mg 비료 용액 1 mL ≈ ${(mgMg_per_mL).toFixed(2)} mg Mg`);
+  lines.push(`10% Ca 비료 용액 1 mL ≈ ${(mgCa_per_mL).toFixed(2)} mg Ca`);
+
+  setText("metaC", lines.join("\n"));
+
+  saveCaMg();
+}
+
 /* ===== 현재 모드 재계산 ===== */
-function recalc(){ isKMode()? calcK(): calcSimple(); }
+function recalc(){
+  const mode = getMode();
+  if(mode === MODE_K) calcK();
+  else if(mode === MODE_CAMG) calcCaMg();
+  else calcSimple();
+}
 
 /* ===== 이벤트 ===== */
 $("btnCalcS").addEventListener("click",calcSimple);
 $("btnCalc").addEventListener("click",calcK);
+$("btnCalcCaMg").addEventListener("click",calcCaMg);
 
-["VbatchS","ECtS","dE_AB_500S"].forEach(id=> $(id).addEventListener("change",()=>{saveSimple()}));
+["VbatchS","ECtS","dE_AB_500S"]
+  .forEach(id=> $(id).addEventListener("change",saveSimple));
 ["Vbatch","ECt","dE_AB_500","dE_K_250","rhoK","tK","tN"]
-.forEach(id=> $(id).addEventListener("change",()=>{saveK()}));
+  .forEach(id=> $(id).addEventListener("change",saveK));
+["VbatchC","ECtC","dE_AB_500C","CaTarget","MgTarget","rhoMg","rhoCa"]
+  .forEach(id=> $(id).addEventListener("change",saveCaMg));
 
-$("modeSwitch").addEventListener("change",e=>{applyModeUI(e.target.checked);recalc();});
-$("chipSimple").addEventListener("click",()=>{applyModeUI(false);recalc();});
-$("chipK").addEventListener("click",()=>{applyModeUI(true);recalc();});
+$("chipModeSimple").addEventListener("click",()=>{applyModeUI(MODE_SIMPLE);recalc();});
+$("chipModeK").addEventListener("click",()=>{applyModeUI(MODE_K);recalc();});
+$("chipModeCaMg").addEventListener("click",()=>{applyModeUI(MODE_CAMG);recalc();});
 
 $("unitSwitch").addEventListener("change",e=>{applyUnitUI(e.target.checked);recalc();});
 
 /* ===== 초기 로드 ===== */
 (function(){
-  applyModeUI(isKMode());
+  applyModeUI(getMode());
   applyUnitUI(isUnitML());
-  loadSimple(); loadK();
+  loadSimple(); loadK(); loadCaMg();
 })();
 </script>
 </body>
