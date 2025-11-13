@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>안정형 양액 계산기 (EC+Ca+Mg 정확, K:N 근사)</title>
+<title>안정형 양액 계산기 (EC·Cㄴa·Mg 정확, K:N 근사)</title>
 
 <style>
 :root{ --brand:#0066ff; --card-w:900px; }
@@ -47,9 +47,6 @@ th{background:#eef4ff;}
 }
 input:checked + .slider{background:#a9c4ff;}
 input:checked + .slider:before{transform:translateX(16px);}
-.err{
-  color:#cc0000;font-weight:700;margin-top:14px;font-size:0.95rem;
-}
 .meta{
   margin-top:14px;font-size:0.9rem;white-space:pre-line;color:#333;
 }
@@ -105,16 +102,16 @@ input:checked + .slider:before{transform:translateX(16px);}
 <script>
 "use strict";
 
-/* ===========================
-   자동 저장
-=========================== */
-const STORE_KEY="safe_sweep_v1";
+const $ = id => document.getElementById(id);
+
+/* ===== 자동 저장 ===== */
+const STORE_KEY="safe_sweep_v2";
 const fields=["V","ECt","dAB","dK","dMg","dCa","CaT","MgT","Kr","Nr","unit"];
 
 function saveData(){
   const o={};
   fields.forEach(id=>{
-    const el=document.getElementById(id);
+    const el=$(id);
     o[id]=(el.type==="checkbox")?el.checked:el.value;
   });
   localStorage.setItem(STORE_KEY,JSON.stringify(o));
@@ -125,42 +122,36 @@ function loadData(){
   const o=JSON.parse(raw);
   fields.forEach(id=>{
     if(o[id]!==undefined){
-      const el=document.getElementById(id);
+      const el=$(id);
       if(el.type==="checkbox") el.checked=o[id];
       else el.value=o[id];
     }
   });
 }
 fields.forEach(id=>{
-  document.getElementById(id).addEventListener("input",()=>setTimeout(saveData,150));
+  $(id).addEventListener("input",()=>setTimeout(saveData,150));
 });
 loadData();
 
-/* ===========================
-   AB 성분 (mg/mL)
-=========================== */
+/* ===== AB 성분 (mg/mL) ===== */
 const AB_N  = 47.40;
 const AB_K  = 35.10;
 const AB_Ca = 18.50;
 const AB_Mg = 4.13;
 
-/* ===========================
-   보충제 성분 (mg/mL)
-=========================== */
+/* ===== 보충제 성분 (mg/mL) ===== */
 const AT={Mg:24.305,Ca:40.078,O:15.999};
 const Mg_frac=AT.Mg/(AT.Mg+AT.O);
 const Ca_frac=AT.Ca/(AT.Ca+AT.O);
 
-const mgMg_mL = 0.16 * Mg_frac * 100;    // 10% 용액 → 0.1 × 1000
-const mgCa_mL = 0.26 * Ca_frac * 100;    // mg/mL 단위
+const mgMg_mL = 0.16 * Mg_frac * 100;   // 16% MgO, 10wt% 용액
+const mgCa_mL = 0.26 * Ca_frac * 100;   // 26% CaO, 10wt% 용액
 
 const MW_K2SO4=174.259;
 const K_frac=(39.0983*2)/MW_K2SO4;
-const mgK_mL = K_frac * 100;
+const mgK_mL = K_frac * 100;            // 10wt% 용액
 
-/* ===========================
-   3×3 선형 방정식 풀기
-=========================== */
+/* ===== 3×3 선형 방정식 ===== */
 function solve3(A,b){
   A=A.map(r=>r.slice());
   b=b.slice();
@@ -187,40 +178,43 @@ function solve3(A,b){
   return b;
 }
 
-/* ===========================
-  
-   계산 버튼
-=========================== */
-document.getElementById("calc").onclick = () => {
+/* ===== 계산 버튼 ===== */
+$("calc").onclick=()=>{
+  const V    = parseFloat($("V").value);
+  const ECt  = parseFloat($("ECt").value);
+  const dABv = parseFloat($("dAB").value);
+  const dKv  = parseFloat($("dK").value);
+  const dMgv = parseFloat($("dMg").value);
+  const dCav = parseFloat($("dCa").value);
+  const CaT  = parseFloat($("CaT").value);
+  const MgT  = parseFloat($("MgT").value);
+  const Krv  = parseFloat($("Kr").value);
+  const Nrv  = parseFloat($("Nr").value);
 
-  const V   = parseFloat(V_el.value);
-  const ECt = parseFloat(ECt_el.value);
+  const meta = $("meta");
+  const result = $("result");
+  meta.textContent="";
+  result.innerHTML="";
 
-  const sAB = parseFloat(dAB_el.value)/500;
-  const sK  = parseFloat(dK_el.value)/250;
-  const sMg = parseFloat(dMg_el.value)/250;
-  const sCa = parseFloat(dCa_el.value)/250;
-
-  const CaT = parseFloat(CaT_el.value);
-  const MgT = parseFloat(MgT_el.value);
-
-  const Krv = parseFloat(Kr_el.value);
-  const Nrv = parseFloat(Nr_el.value);
-  const KNtarget = Krv/Nrv;
-
-
-  if(![V,ECt,sAB,sK,sMg,sCa,CaT,MgT,Krv,Nrv].every(Number.isFinite)){
-    meta.textContent="❌ 입력값 오류";
+  if(![V,ECt,dABv,dKv,dMgv,dCav,CaT,MgT,Krv,Nrv].every(Number.isFinite) || V<=0){
+    meta.textContent="❌ 입력값을 다시 확인해줘.";
     return;
   }
+
+  const sAB=dABv/500;
+  const sK =dKv /250;
+  const sMg=dMgv/250;
+  const sCa=dCav/250;
 
   const EC_RHS = ECt * V;
   const Ca_RHS = CaT * V * 1000;
   const Mg_RHS = MgT * V * 1000;
+  const KNtarget = Krv/Nrv;
 
-  const vK_max = Math.max(0,(EC_RHS / sK) * 0.99);
+  const vK_max = Math.max(0,(EC_RHS/sK)*0.99);
 
-  let best=null, bestErr=1e99;
+  let best=null;
+  let bestErr=1e99;
 
   const steps=700;
   for(let i=0;i<=steps;i++){
@@ -237,41 +231,40 @@ document.getElementById("calc").onclick = () => {
       Mg_RHS
     ];
 
-    const sol = solve3(A,b);
+    if(b[0] < 0) continue;
+
+    const sol=solve3(A,b);
     if(!sol) continue;
-
-    const [vAB, vMg, vCa] = sol;
-
-    if(vAB<0 || vMg<0 || vCa<0) continue;
+    const [vAB,vMg,vCa]=sol;
+    if(vAB<0||vMg<0||vCa<0) continue;
 
     const K = vAB*AB_K + vK*mgK_mL;
     const N = vAB*AB_N;
     if(N<=0) continue;
 
-    const err = (K/N - KNtarget)**2;
-
-    if(err < bestErr){
-      bestErr = err;
-      best = {vAB, vK, vMg, vCa};
+    const err=(K/N - KNtarget)**2;
+    if(err<bestErr){
+      bestErr=err;
+      best={vAB,vK,vMg,vCa};
     }
   }
 
   if(!best){
-    result.innerHTML="";
-    meta.textContent="❌ 현재 목표 조합은 EC·Ca·Mg를 만족하면서 K:N을 근사할 수 있는 조합이 없음.";
+    meta.textContent="❌ EC·Ca·Mg를 만족하면서 K:N을 근사할 수 있는 조합을 찾지 못했어.";
     return;
   }
 
-  const {vAB, vK, vMg, vCa}=best;
+  const {vAB,vK,vMg,vCa}=best;
 
-  const unit = unit.checked ? 1/1000 : 1;
-  const uname = unit.checked ? "mL" : "µL";
+  const unitChecked = $("unit").checked;
+  const factor = unitChecked?1/1000:1;
+  const uname  = unitChecked?"mL":"µL";
 
-  const Aamt=(vAB/2)*unit;
-  const Bamt=(vAB/2)*unit;
-  const Kamp=vK*unit;
-  const Mgamp=vMg*unit;
-  const Caamp=vCa*unit;
+  const Aamt=(vAB/2)*factor;
+  const Bamt=(vAB/2)*factor;
+  const Kamp=vK*factor;
+  const Mgamp=vMg*factor;
+  const Caamp=vCa*factor;
 
   result.innerHTML=`
   <table>
@@ -285,17 +278,16 @@ document.getElementById("calc").onclick = () => {
   </table>
   `;
 
+  const K_real = (vAB*AB_K + vK*mgK_mL)/(vAB*AB_N);
   meta.textContent =
-`✔ EC / Ca / Mg 정확히 충족됨
-✔ K:N 비는 가능한 범위에서 최적 근사됨
-✔ 음수 해 없음 (안전 sweep 방식)
+`✔ EC / Ca / Mg는 식으로 정확히 맞춘 상태
+✔ K:N 비는 가능한 범위에서 최적 근사
 
-실제 K:N ≈ ${( (vAB*AB_K + vK*mgK_mL) / (vAB*AB_N) ).toFixed(3)}
+실제 K:N ≈ ${K_real.toFixed(3)}
 목표 K:N = ${KNtarget.toFixed(3)}
-오차 = ${bestErr.toExponential(3)}`;
+제곱 오차 = ${bestErr.toExponential(3)}`;
 };
 </script>
 
 </body>
 </html>
-
