@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>최적화 기반 양액 계산기 V3</title>
+<title>최적화 기반 양액 계산기 V3 FIX</title>
 
 <style>
 :root{ --brand:#007bff; --card-w:900px; }
@@ -88,6 +88,21 @@ input:checked + .slider:before{transform:translateX(14px);}
 
 <script>
 "use strict";
+
+/* ================================
+   DOM elements
+================================ */
+const V_el   = document.getElementById("V");
+const ECt_el = document.getElementById("ECt");
+const dAB_el = document.getElementById("dAB");
+const dK_el  = document.getElementById("dK");
+const dMg_el = document.getElementById("dMg");
+const dCa_el = document.getElementById("dCa");
+const CaT_el = document.getElementById("CaT");
+const MgT_el = document.getElementById("MgT");
+const Kr_el  = document.getElementById("Kr");
+const Nr_el  = document.getElementById("Nr");
+const unit_el= document.getElementById("unit");
 
 /* ================================
    자동저장
@@ -185,19 +200,19 @@ function minimize(a,b,f){
 ================================ */
 document.getElementById("calc").onclick=()=>{
 
-  const V=parseFloat(V.value);
-  const ECt=parseFloat(ECt.value);
+  const V   = parseFloat(V_el.value);
+  const ECt = parseFloat(ECt_el.value);
 
-  const dAB=parseFloat(dAB.value)/500;
-  const dK=parseFloat(dK.value)/250;
-  const dMgE=parseFloat(dMg.value)/250;
-  const dCaE=parseFloat(dCa.value)/250;
+  const dAB = parseFloat(dAB_el.value)/500;
+  const dK  = parseFloat(dK_el.value)/250;
+  const dMgE= parseFloat(dMg_el.value)/250;
+  const dCaE= parseFloat(dCa_el.value)/250;
 
-  const CaT=parseFloat(CaT.value);
-  const MgT=parseFloat(MgT.value);
+  const CaT = parseFloat(CaT_el.value);
+  const MgT = parseFloat(MgT_el.value);
 
-  const Krv=parseFloat(Kr.value);
-  const Nrv=parseFloat(Nr.value);
+  const Krv=parseFloat(Kr_el.value);
+  const Nrv=parseFloat(Nr_el.value);
   const KNtarget=Krv/Nrv;
 
   const max_vK=(ECt*V)/dK*0.9;
@@ -213,9 +228,9 @@ document.getElementById("calc").onclick=()=>{
       MgT*V*1000
     ];
     const A=[
-      [dAB,     dMgE,      dCaE],
-      [AB_Ca,   0,         mgCa],
-      [AB_Mg,   mgMg,      0   ]
+      [dAB,     dMgE,       dCaE],
+      [AB_Ca,   0,          mgCa],
+      [AB_Mg,   mgMg,       0   ]
     ];
     return solve3(A,b);
   }
@@ -234,8 +249,8 @@ document.getElementById("calc").onclick=()=>{
   const vK_best=minimize(0,max_vK,F);
   const [vAB_best,vMg_best,vCa_best]=solveFor(vK_best);
 
-  const unit=unit.checked?(1/1000):1;
-  const uname=unit===1?"µL":"mL";
+  const unit = unit_el.checked?(1/1000):1;
+  const uname= unit_el.checked?"mL":"µL";
 
   const Aamt=(vAB_best/2)*unit;
   const Bamt=(vAB_best/2)*unit;
@@ -255,9 +270,8 @@ document.getElementById("calc").onclick=()=>{
   </table>`;
 
   meta.textContent=
-`EC·Ca·Mg는 정확히 충족됨.
-K:N은 가능한 범위 내에서 최적 근사됨.
-음수 없음, 해 없음 없음.
+`EC·Ca·Mg 정확히 충족됨.
+K:N 근사 최적화 완료.
 
 AB 구성 (mg/mL):
 N=${AB_N}, K=${AB_K}, Ca=${AB_Ca}, Mg=${AB_Mg}`;
