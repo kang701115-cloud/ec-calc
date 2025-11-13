@@ -188,24 +188,26 @@ function solve3(A,b){
 }
 
 /* ===========================
+  
    계산 버튼
 =========================== */
-document.getElementById("calc").onclick=()=>{
+document.getElementById("calc").onclick = () => {
 
-  const V=parseFloat(V.value);
-  const ECt=parseFloat(ECt.value);
+  const V   = parseFloat(V_el.value);
+  const ECt = parseFloat(ECt_el.value);
 
-  const sAB=parseFloat(dAB.value)/500;
-  const sK =parseFloat(dK.value)/250;
-  const sMg=parseFloat(dMg.value)/250;
-  const sCa=parseFloat(dCa.value)/250;
+  const sAB = parseFloat(dAB_el.value)/500;
+  const sK  = parseFloat(dK_el.value)/250;
+  const sMg = parseFloat(dMg_el.value)/250;
+  const sCa = parseFloat(dCa_el.value)/250;
 
-  const CaT=parseFloat(CaT.value);
-  const MgT=parseFloat(MgT.value);
+  const CaT = parseFloat(CaT_el.value);
+  const MgT = parseFloat(MgT_el.value);
 
-  const Krv=parseFloat(Kr.value);
-  const Nrv=parseFloat(Nr.value);
+  const Krv = parseFloat(Kr_el.value);
+  const Nrv = parseFloat(Nr_el.value);
   const KNtarget = Krv/Nrv;
+
 
   if(![V,ECt,sAB,sK,sMg,sCa,CaT,MgT,Krv,Nrv].every(Number.isFinite)){
     meta.textContent="❌ 입력값 오류";
@@ -296,3 +298,4 @@ document.getElementById("calc").onclick=()=>{
 
 </body>
 </html>
+
