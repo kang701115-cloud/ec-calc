@@ -1,183 +1,144 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>1최적화 기반 양액 계산기</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>최적화 기반 양액 계산기 V3</title>
 
 <style>
-:root{ --brand:#007bff; --brand-dark:#0056b3; --card-w:900px; }
-*{box-sizing:border-box}
-body{ background:#f6f7fa; margin:0; padding:20px;
-      font-family:Arial, sans-serif; text-align:center;}
-h1{color:var(--brand); font-size:2rem; margin-bottom:10px;}
-.wrap{max-width:var(--card-w); margin:0 auto;}
+:root{ --brand:#007bff; --card-w:900px; }
+*{box-sizing:border-box;}
+body{background:#f6f7fa;font-family:Arial;padding:20px;text-align:center;}
+h1{color:var(--brand);}
+.wrap{max-width:var(--card-w);margin:0 auto;}
 .card{
-  background:white; padding:20px; margin-bottom:20px;
-  border-radius:12px; box-shadow:0 6px 12px rgba(0,0,0,0.08);
-  text-align:left;
+  background:#fff;padding:20px;border-radius:12px;
+  box-shadow:0 4px 16px rgba(0,0,0,.08);text-align:left;margin-bottom:20px;
 }
-label{font-weight:700; margin-top:10px; display:block;}
-input{
-  width:100%; padding:10px; margin-top:6px;
-  border:1px solid #ccc; border-radius:8px; font-size:1rem;
-}
-.row{display:flex; flex-wrap:wrap; gap:12px;}
+label{font-weight:700;display:block;margin-top:10px;}
+input{width:100%;padding:10px;margin-top:5px;border:1px solid #ccc;border-radius:8px;}
+.row{display:flex;flex-wrap:wrap;gap:12px;}
 .row>div{flex:1 1 260px;}
 .btn{
-  background:var(--brand); color:white; border:none;
-  padding:14px; border-radius:10px; margin-top:20px;
-  font-size:1.1rem; cursor:pointer; width:100%;
+  width:100%;padding:14px;margin-top:20px;border:none;border-radius:10px;
+  background:var(--brand);color:#fff;font-size:1.1rem;cursor:pointer;
 }
-.btn:hover{background:var(--brand-dark);}
-
-table{width:100%; border-collapse:collapse; margin-top:20px;}
-th,td{padding:10px; border:1px solid #eee;}
-th{background:#eff4ff;}
-.unit-chip{
-  font-weight:700; padding:4px 8px; background:#eef2ff;
-  border-radius:999px; font-size:0.9rem;
-}
-
-.switch{position:relative; width:32px; height:18px; display:inline-block;}
-.switch input{opacity:0; width:0; height:0;}
+table{width:100%;border-collapse:collapse;margin-top:20px;}
+th,td{padding:10px;border:1px solid #eee;}
+th{background:#eef4ff;}
+.switch{position:relative;width:32px;height:18px;display:inline-block;}
+.switch input{opacity:0;width:0;height:0;}
 .slider{
-  position:absolute; inset:0; background:#cfe2ff;
-  border-radius:999px; cursor:pointer; transition:0.2s;
+  position:absolute;inset:0;background:#cfe2ff;border-radius:999px;cursor:pointer;
 }
 .slider:before{
-  content:''; position:absolute; width:14px; height:14px;
-  background:white; border-radius:50%; left:2px; top:2px;
-  transition:0.2s;
+  content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:#fff;
+  border-radius:50%;transition:.25s;
 }
 input:checked + .slider{background:#a9c4ff;}
 input:checked + .slider:before{transform:translateX(14px);}
-
-.meta{margin-top:20px; font-size:0.95rem;
-      white-space:pre-line; color:#333;}
-.bad{color:#b00020; font-weight:700;}
 </style>
 </head>
+
 <body>
-<h1>최적화 기반 양액 계산기</h1>
+<h1>최적화 기반 양액 계산기 V3</h1>
 
 <div class="wrap">
-  <div class="card">
+<div class="card">
 
-    <h2>기본 입력</h2>
-
-    <div class="row">
-      <div><label>배합 용량 (L)</label><input id="V" type="number" step="0.1"></div>
-      <div><label>목표 EC (mS/cm)</label><input id="ECt" type="number" step="0.01"></div>
-    </div>
-
-    <h3>EC 증가량</h3>
-    <div class="row">
-      <div><label>AB 500 µL → ΔEC</label><input id="dAB" type="number" step="0.01"></div>
-      <div><label>K₂SO₄ 250 µL → ΔEC</label><input id="dK"  type="number" step="0.01"></div>
-      <div><label>MgSO₄ 250 µL → ΔEC</label><input id="dMg" type="number" step="0.01"></div>
-      <div><label>Ca(NO₃)₂ 250 µL → ΔEC</label><input id="dCa" type="number" step="0.01"></div>
-    </div>
-
-    <h3>목표 Ca/Mg (mg/L)</h3>
-    <div class="row">
-      <div><label>Ca 목표 (mg/L)</label><input id="CaT" type="number"></div>
-      <div><label>Mg 목표 (mg/L)</label><input id="MgT" type="number"></div>
-    </div>
-
-    <h3>K:N 비율 (근사)</h3>
-    <div class="row">
-      <div><label>K 값</label><input id="Kr" type="number"></div>
-      <div><label>N 값</label><input id="Nr" type="number"></div>
-    </div>
-
-    <h3>단위</h3>
-    <span class="unit-chip">µL</span>
-    <label class="switch"><input id="unit" type="checkbox"><span class="slider"></span></label>
-    <span class="unit-chip">mL</span>
-
-    <button class="btn" id="calc">계산하기</button>
-
-    <div id="result"></div>
-    <div id="meta" class="meta"></div>
-
-  </div>
+<h2>기본 입력</h2>
+<div class="row">
+  <div><label>배합 용량 (L)</label><input id="V" type="number"></div>
+  <div><label>목표 EC (mS/cm)</label><input id="ECt" type="number" step="0.01"></div>
 </div>
+
+<h3>EC 증가량</h3>
+<div class="row">
+  <div><label>AB 500µL → ΔEC</label><input id="dAB" type="number" step="0.01"></div>
+  <div><label>K₂SO₄ 250µL → ΔEC</label><input id="dK" type="number" step="0.01"></div>
+  <div><label>MgSO₄ 250µL → ΔEC</label><input id="dMg" type="number" step="0.01"></div>
+  <div><label>Ca(NO₃)₂ 250µL → ΔEC</label><input id="dCa" type="number" step="0.01"></div>
+</div>
+
+<h3>목표 Ca/Mg</h3>
+<div class="row">
+  <div><label>Ca 목표 (mg/L)</label><input id="CaT" type="number"></div>
+  <div><label>Mg 목표 (mg/L)</label><input id="MgT" type="number"></div>
+</div>
+
+<h3>K:N 목표비 (근사)</h3>
+<div class="row">
+  <div><label>K 값</label><input id="Kr" type="number"></div>
+  <div><label>N 값</label><input id="Nr" type="number"></div>
+</div>
+
+<h3>단위</h3>
+<span>µL</span>
+<label class="switch"><input id="unit" type="checkbox"><span class="slider"></span></label>
+<span>mL</span>
+
+<button class="btn" id="calc">계산하기</button>
+
+<div id="result"></div>
+<div id="meta" style="margin-top:20px;font-size:0.9rem;white-space:pre-line;"></div>
+
+</div>
+</div>
+
 
 <script>
 "use strict";
 
-/* === 자동저장 엔진 === */
-const STORE_KEY = "nutriCalc_v1";
+/* ================================
+   자동저장
+================================ */
+const STORE_KEY="nutri_calc_v3";
+const fields=["V","ECt","dAB","dK","dMg","dCa","CaT","MgT","Kr","Nr","unit"];
 
-/* 저장할 입력 요소 ID들 */
-const fields = ["V","ECt","dAB","dK","dMg","dCa","CaT","MgT","Kr","Nr","unit"];
-
-/* 저장 함수 */
 function saveData(){
-  const obj = {};
+  const o={};
   fields.forEach(id=>{
-    const el = document.getElementById(id);
-    obj[id] = (el.type==="checkbox") ? el.checked : el.value;
+    const el=document.getElementById(id);
+    o[id]=(el.type==="checkbox")?el.checked:el.value;
   });
-  localStorage.setItem(STORE_KEY, JSON.stringify(obj));
+  localStorage.setItem(STORE_KEY,JSON.stringify(o));
 }
-
-/* 로드 함수 */
 function loadData(){
-  const raw = localStorage.getItem(STORE_KEY);
+  const raw=localStorage.getItem(STORE_KEY);
   if(!raw) return;
-  const obj = JSON.parse(raw);
+  const o=JSON.parse(raw);
   fields.forEach(id=>{
-    if(obj[id] !== undefined){
-      const el = document.getElementById(id);
-      if(el.type==="checkbox") el.checked = obj[id];
-      else el.value = obj[id];
+    if(o[id]!==undefined){
+      const el=document.getElementById(id);
+      if(el.type==="checkbox") el.checked=o[id];
+      else el.value=o[id];
     }
   });
 }
-
-/* 입력 변경시 자동저장(0.3초 delay) */
-let saveTimer=null;
-function autoSave(){
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(saveData,300);
-}
-
-/* 이벤트 연결 */
 fields.forEach(id=>{
-  const el=document.getElementById(id);
-  el.addEventListener("input", autoSave);
+  document.getElementById(id).addEventListener("input",()=>setTimeout(saveData,200));
 });
-
-/* 페이지 시작시 로드 */
 loadData();
 
-/* === 아래는 계산 로직 (이전 안정버전 그대로) === */
+/* ================================
+   성분 mg/mL
+================================ */
+const AB_N=47.40, AB_K=35.10, AB_Ca=18.50, AB_Mg=4.13;
 
-/* AB 성분 (mg/mL) */
-const AB_N  = 47.40;
-const AB_K  = 35.10;
-const AB_Ca = 18.50;
-const AB_Mg = 4.13;
+const AT={Mg:24.305,Ca:40.078,O:15.999};
+const Mg_frac=AT.Mg/(AT.Mg+AT.O);
+const Ca_frac=AT.Ca/(AT.Ca+AT.O);
 
-/* MgSO₄ / Ca(NO₃)₂ 원소함량 → 10% 용액 mg/mL */
-const AT={Mg:24.305, Ca:40.078, O:15.999};
-const M_MgO = AT.Mg + AT.O;
-const M_CaO = AT.Ca + AT.O;
+const mgMg=0.16*Mg_frac*0.1*1000;
+const mgCa=0.26*Ca_frac*0.1*1000;
 
-const Mg_frac = AT.Mg / M_MgO;
-const Ca_frac = AT.Ca / M_CaO;
+const MW_K2SO4=174.259;
+const K_frac=(39.0983*2)/MW_K2SO4;
+const mgK=K_frac*0.1*1000;
 
-const mgMg_per_mL = 0.16 * Mg_frac * 0.10 * 1000;
-const mgCa_per_mL = 0.26 * Ca_frac * 0.10 * 1000;
-
-/* K₂SO₄ */
-const MW_K2SO4 = 174.259;
-const K_frac = (39.0983*2) / MW_K2SO4;
-const mgK_per_mL = K_frac * 0.10 * 1000;
-
-/* 3x3 선형 */
+/* ================================
+   선형 3×3
+================================ */
 function solve3(A,b){
   A=A.map(r=>r.slice());
   b=b.slice();
@@ -205,121 +166,101 @@ function solve3(A,b){
   return b;
 }
 
-/* K:N error */
-function KN_error(vAB, vK){
-  const K = vAB*AB_K + vK*mgK_per_mL;
-  const N = vAB*AB_N;
-  if(N<=0) return 1e12;
-
-  const Kr=parseFloat(Kr_el.value);
-  const Nr=parseFloat(Nr_el.value);
-  const target = Kr/Nr;
-
-  return (K/N - target)**2;
-}
-
-/* golden section */
+/* ================================
+   Golden-section
+================================ */
 function minimize(a,b,f){
   const phi=(1+Math.sqrt(5))/2;
   let c=b-(b-a)/phi;
   let d=a+(b-a)/phi;
   while(Math.abs(b-a)>1e-4){
-    if(f(c)<f(d)){
-      b=d; d=c; c=b-(b-a)/phi;
-    } else {
-      a=c; c=d; d=a+(b-a)/phi;
-    }
+    if(f(c)<f(d)){ b=d; d=c; c=b-(b-a)/phi; }
+    else{ a=c; c=d; d=a+(b-a)/phi; }
   }
   return (a+b)/2;
 }
 
-/* DOM */
-const V_el=document.getElementById("V");
-const ECt_el=document.getElementById("ECt");
-const dAB_el=document.getElementById("dAB");
-const dK_el=document.getElementById("dK");
-const dMg_el=document.getElementById("dMg");
-const dCa_el=document.getElementById("dCa");
-const CaT_el=document.getElementById("CaT");
-const MgT_el=document.getElementById("MgT");
-const Kr_el=document.getElementById("Kr");
-const Nr_el=document.getElementById("Nr");
-const unit_el=document.getElementById("unit");
+/* ================================
+   계산
+================================ */
+document.getElementById("calc").onclick=()=>{
 
-/* 계산 */
-document.getElementById("calc").onclick = ()=>{
+  const V=parseFloat(V.value);
+  const ECt=parseFloat(ECt.value);
 
-  const V   = parseFloat(V_el.value);
-  const ECt = parseFloat(ECt_el.value);
+  const dAB=parseFloat(dAB.value)/500;
+  const dK=parseFloat(dK.value)/250;
+  const dMgE=parseFloat(dMg.value)/250;
+  const dCaE=parseFloat(dCa.value)/250;
 
-  const dAB = parseFloat(dAB_el.value)/500;
-  const dK  = parseFloat(dK_el.value)/250;
-  const dMg = parseFloat(dMg_el.value)/250;
-  const dCa = parseFloat(dCa_el.value)/250;
+  const CaT=parseFloat(CaT.value);
+  const MgT=parseFloat(MgT.value);
 
-  const CaT = parseFloat(CaT_el.value);
-  const MgT = parseFloat(MgT_el.value);
+  const Krv=parseFloat(Kr.value);
+  const Nrv=parseFloat(Nr.value);
+  const KNtarget=Krv/Nrv;
 
-  const max_vK = Math.max(1, (ECt*V)/dK * 0.95);
+  const max_vK=(ECt*V)/dK*0.9;
 
+  /* 목적함수 */
   function solveFor(vK){
-    const RHS_EC = ECt*V - dK*vK;
-    if(RHS_EC < 0) return [-1,-1,-1];
+    const RHS_EC=ECt*V - dK*vK;
+    if(RHS_EC<0) return [-1,-1,-1];
 
-    const b = [
+    const b=[
       RHS_EC,
       CaT*V*1000,
       MgT*V*1000
     ];
-    const A = [
-      [dAB,  dMg,        dCa],
-      [AB_Ca, 0,         mgCa_per_mL],
-      [AB_Mg, mgMg_per_mL, 0]
+    const A=[
+      [dAB,     dMgE,      dCaE],
+      [AB_Ca,   0,         mgCa],
+      [AB_Mg,   mgMg,      0   ]
     ];
-
     return solve3(A,b);
   }
 
   function F(vK){
-    const [vAB,vMg,vCa] = solveFor(vK);
-    if(vAB<0||vMg<0||vCa<0) return 1e12;
-    return KN_error(vAB,vK);
+    const [vAB,vMgS,vCaS]=solveFor(vK);
+    if(vAB<0||vMgS<0||vCaS<0) return 1e9;
+
+    const K = vAB*AB_K + vK*mgK;
+    const N = vAB*AB_N;
+    if(N<=0) return 1e9;
+
+    return (K/N - KNtarget)**2;
   }
 
-  const vK_best = minimize(0,max_vK,F);
-  const [vAB_best,vMg_best,vCa_best] = solveFor(vK_best);
+  const vK_best=minimize(0,max_vK,F);
+  const [vAB_best,vMg_best,vCa_best]=solveFor(vK_best);
 
-  const unit = unit_el.checked ? 1/1000 : 1;
-  const uname = unit_el.checked ? "mL" : "µL";
+  const unit=unit.checked?(1/1000):1;
+  const uname=unit===1?"µL":"mL";
 
-  const Aamt = (vAB_best/2)*unit;
-  const Bamt = (vAB_best/2)*unit;
-  const Kamp = vK_best*unit;
-  const Mgamp = vMg_best*unit;
-  const Caamp = vCa_best*unit;
+  const Aamt=(vAB_best/2)*unit;
+  const Bamt=(vAB_best/2)*unit;
+  const Kamp=vK_best*unit;
+  const Mgamp=vMg_best*unit;
+  const Caamp=vCa_best*unit;
 
-  document.getElementById("result").innerHTML = `
-    <table>
-      <tr><th>원액</th><th>주입량 (${uname})</th></tr>
-      <tr><td>A액</td><td>${Aamt.toFixed(2)}</td></tr>
-      <tr><td>B액</td><td>${Bamt.toFixed(2)}</td></tr>
-      <tr><td>K₂SO₄ 10% 용액</td><td>${Kamp.toFixed(2)}</td></tr>
-      <tr><td>MgSO₄ 10% 용액</td><td>${Mgamp.toFixed(2)}</td></tr>
-      <tr><td>Ca(NO₃)₂ 10% 용액</td><td>${Caamp.toFixed(2)}</td></tr>
-      <tr><td><b>총합</b></td><td><b>${(Aamt+Bamt+Kamp+Mgamp+Caamp).toFixed(2)}</b></td></tr>
-    </table>
-  `;
+  result.innerHTML=`
+  <table>
+    <tr><th>원액</th><th>주입량 (${uname})</th></tr>
+    <tr><td>A액</td><td>${Aamt.toFixed(2)}</td></tr>
+    <tr><td>B액</td><td>${Bamt.toFixed(2)}</td></tr>
+    <tr><td>K₂SO₄ 10%</td><td>${Kamp.toFixed(2)}</td></tr>
+    <tr><td>MgSO₄ 10%</td><td>${Mgamp.toFixed(2)}</td></tr>
+    <tr><td>Ca(NO₃)₂ 10%</td><td>${Caamp.toFixed(2)}</td></tr>
+    <tr><td><b>총합</b></td><td><b>${(Aamt+Bamt+Kamp+Mgamp+Caamp).toFixed(2)}</b></td></tr>
+  </table>`;
 
-  document.getElementById("meta").textContent =
-`EC, Ca, Mg는 정확히 충족됩니다.
-K:N은 가능한 최적으로 근사됨(표시는 하지 않음).
+  meta.textContent=
+`EC·Ca·Mg는 정확히 충족됨.
+K:N은 가능한 범위 내에서 최적 근사됨.
+음수 없음, 해 없음 없음.
 
-AB 성분 (mg/mL):
-N=${AB_N}, K=${AB_K}, Ca=${AB_Ca}, Mg=${AB_Mg}
-
-MgSO₄ 용액: ${mgMg_per_mL.toFixed(2)} mg Mg/mL  
-Ca(NO₃)₂ 용액: ${mgCa_per_mL.toFixed(2)} mg Ca/mL  
-K₂SO₄ 용액: ${mgK_per_mL.toFixed(2)} mg K/mL`;
+AB 구성 (mg/mL):
+N=${AB_N}, K=${AB_K}, Ca=${AB_Ca}, Mg=${AB_Mg}`;
 };
 </script>
 
