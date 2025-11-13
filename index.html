@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title> 양액 계산기</title>
+<title>5성분 EC 통합 양액 계산기 (저장 기능 포함)</title>
 
 <style>
 :root{ --brand:#007BFF; --brand-dark:#0056b3; --card-w: 880px; }
@@ -56,7 +56,7 @@ input{
   background:#cfe2ff; border-radius:999px; transition:.2s;
 }
 .slider:before{
-  content:\"\"; position:absolute;
+  content:""; position:absolute;
   width:12px; height:12px; left:2px; top:2px;
   background:#fff; border-radius:50%; transition:.2s;
 }
@@ -83,12 +83,12 @@ td:first-child{text-align:left}
 <div class="wrap">
   <div class="card">
 
-    <h2>기본 입력</h2>
+    <h2>기본 입력 (자동 저장됨)</h2>
 
     <div class="row">
       <div>
         <label>배합 용량 (L)</label>
-        <input id="inp_V" type="number" step="0.1" min="0">
+        <input id="inp_V" type="number" step="0.1">
       </div>
       <div>
         <label>목표 EC (mS/cm)</label>
@@ -143,7 +143,7 @@ const AB_K  = 3510 / 100;  // mg/mL
 const AB_Ca = 1850 / 100;  // mg/mL
 const AB_Mg = 413  / 100;  // mg/mL
 
-/* Mg/Ca 10% 용액 성분 (산화물 → 원소 mg/mL 환산) */
+/* Mg/Ca 용액 mg/mL */
 const AT = { Mg:24.305, Ca:40.078, O:15.999 };
 const M_MgO = AT.Mg + AT.O;
 const M_CaO = AT.Ca + AT.O;
@@ -153,15 +153,15 @@ const Ca_frac = AT.Ca / M_CaO;
 const mgMg_per_mL = 0.16 * Mg_frac * 0.10 * 1000;
 const mgCa_per_mL = 0.26 * Ca_frac * 0.10 * 1000;
 
-/* K₂SO₄ 용액 10% → 실제 K mg/mL */
+/* K₂SO₄ 용액 mg/mL */
 const MW_K2SO4 = 174.259;
 const MASS_K2 = 39.0983*2;
 const K_frac_K2SO4 = MASS_K2 / MW_K2SO4;
 const mgK_per_mL = K_frac_K2SO4 * 0.10 * 1000;
 
-/* ===================== 연립방정식 4x4 풀이 ===================== */
+/* ===================== 연립방정식 4x4 ===================== */
 function solve4(A,b){
-  A=A.map(r=>r.slice());
+  A=A.map(r=>r.slice());  
   b=b.slice();
   for(let i=0;i<4;i++){
     let p=A[i][i];
@@ -170,8 +170,7 @@ function solve4(A,b){
         if(Math.abs(A[j][i])>1e-12){
           [A[i],A[j]]=[A[j],A[i]];
           [b[i],b[j]]=[b[j],b[i]];
-          p=A[i][i];
-          break;
+          p=A[i][i]; break;
         }
       }
     }
@@ -187,10 +186,47 @@ function solve4(A,b){
   return b;
 }
 
-/* ============================ 계산 ============================ */
-document.getElementById("btnCalc").onclick = ()=>{
+/* ===================== localStorage 함수 ===================== */
+function saveAll(){
+  const obj = {
+    V:inp_V.value,  ECt:inp_ECt.value,
+    EC_AB:inp_EC_AB.value, EC_K:inp_EC_K.value,
+    EC_Mg:inp_EC_Mg.value, EC_Ca:inp_EC_Ca.value,
+    CaT:inp_CaT.value, MgT:inp_MgT.value,
+    Kr:inp_Kr.value, Nr:inp_Nr.value,
+    unit:unitSwitch.checked
+  };
+  localStorage.setItem("nutri_full_calc", JSON.stringify(obj));
+}
 
-  const V = parseFloat(inp_V.value);
+function loadAll(){
+  const raw = localStorage.getItem("nutri_full_calc");
+  if(!raw) return;
+  const d = JSON.parse(raw);
+
+  inp_V.value = d.V ?? "";
+  inp_ECt.value = d.ECt ?? "";
+  inp_EC_AB.value = d.EC_AB ?? "";
+  inp_EC_K.value = d.EC_K ?? "";
+  inp_EC_Mg.value = d.EC_Mg ?? "";
+  inp_EC_Ca.value = d.EC_Ca ?? "";
+  inp_CaT.value = d.CaT ?? "";
+  inp_MgT.value = d.MgT ?? "";
+  inp_Kr.value = d.Kr ?? "";
+  inp_Nr.value = d.Nr ?? "";
+
+  unitSwitch.checked = d.unit ?? false;
+}
+
+/* 입력 변화 → 자동 저장 */
+document.querySelectorAll("input").forEach(el=>{
+  el.addEventListener("input",saveAll);
+});
+
+/* ============================ 계산 ============================ */
+btnCalc.onclick = ()=>{
+
+  const V   = parseFloat(inp_V.value);
   const ECt = parseFloat(inp_ECt.value);
 
   const EC_AB = parseFloat(inp_EC_AB.value);
@@ -209,7 +245,6 @@ document.getElementById("btnCalc").onclick = ()=>{
     return;
   }
 
-  /* EC per µL */
   const eAB = EC_AB/500;
   const eK  = EC_K /250;
   const eMg = EC_Mg/250;
@@ -217,9 +252,9 @@ document.getElementById("btnCalc").onclick = ()=>{
 
   const Ca_total = CaT * V;
   const Mg_total = MgT * V;
+
   const r = Kr/Nr;
 
-  /* === 연립방정식 구성 === */
   const A = [
     [ eAB/V,   eK/V,      eMg/V,        eCa/V ],
     [ AB_Ca/1000,   0,          0,          mgCa_per_mL/1000 ],
@@ -234,37 +269,37 @@ document.getElementById("btnCalc").onclick = ()=>{
     0
   ];
 
-  /* 미지수 = [vAB, vK, vMg, vCa] (µL) */
-  const sol = solve4(A,B);
-  let [vAB,vK,vMg,vCa] = sol;
+  const [vAB,vK,vMg,vCa] = solve4(A,B);
 
-  /* 단위변환 */
-  const toUser = (uL)=> unitSwitch.checked ? (uL/1000) : uL;
+  const toUnit = x => unitSwitch.checked ? (x/1000) : x;
   const unit = unitSwitch.checked ? "mL" : "µL";
 
-  document.getElementById("result").innerHTML = `
+  result.innerHTML = `
   <table>
   <thead><tr><th>원액</th><th>주입량 (${unit})</th></tr></thead>
   <tbody>
-    <tr><td>AB(A+B 합)</td><td>${toUser(vAB).toFixed(2)}</td></tr>
-    <tr><td>K₂SO₄ 용액</td><td>${toUser(vK).toFixed(2)}</td></tr>
-    <tr><td>Mg 비료 용액</td><td>${toUser(vMg).toFixed(2)}</td></tr>
-    <tr><td>Ca 비료 용액</td><td>${toUser(vCa).toFixed(2)}</td></tr>
-    <tr><td><b>총합</b></td><td><b>${toUser(vAB+vK+vMg+vCa).toFixed(2)}</b></td></tr>
+    <tr><td>AB(A+B 합)</td><td>${toUnit(vAB).toFixed(2)}</td></tr>
+    <tr><td>K₂SO₄</td><td>${toUnit(vK).toFixed(2)}</td></tr>
+    <tr><td>Mg 비료</td><td>${toUnit(vMg).toFixed(2)}</td></tr>
+    <tr><td>Ca 비료</td><td>${toUnit(vCa).toFixed(2)}</td></tr>
+    <tr><td><b>총합</b></td><td><b>${toUnit(vAB+vK+vMg+vCa).toFixed(2)}</b></td></tr>
   </tbody>
   </table>
   `;
 
-  document.getElementById("meta").innerText = `
+  meta.innerText = `
 AB의 N = ${AB_N.toFixed(2)} mg/mL
 AB의 K = ${AB_K.toFixed(2)} mg/mL
-10% Mg 용액 1mL = ${mgMg_per_mL.toFixed(2)} mg Mg
-10% Ca 용액 1mL = ${mgCa_per_mL.toFixed(2)} mg Ca
-10% K₂SO₄ 용액 1mL = ${mgK_per_mL.toFixed(2)} mg K
+10% Mg 용액 = ${mgMg_per_mL.toFixed(2)} mg Mg / mL
+10% Ca 용액 = ${mgCa_per_mL.toFixed(2)} mg Ca / mL
+10% K₂SO₄ 용액 = ${mgK_per_mL.toFixed(2)} mg K / mL
+
+※ 모든 값은 자동 저장됩니다.
 `;
 };
+
+/* 페이지 열릴 때 값 자동 로드 */
+loadAll();
 </script>
 </body>
 </html>
-
-
