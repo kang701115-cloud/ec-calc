@@ -3,110 +3,112 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>양액 계산기 - 선형 방정식 버전</title>
+<title>안정형 양액 계산기 (EC+Ca+Mg 정확, K:N 근사)</title>
 
 <style>
-:root{ --brand:#007bff; --card-w:900px; }
+:root{ --brand:#0066ff; --card-w:900px; }
 *{box-sizing:border-box;}
-body{background:#f6f7fa;font-family:Arial;padding:20px;text-align:center;}
+body{
+  background:#f6f7fa;
+  font-family:Arial,Helvetica,sans-serif;
+  padding:22px;
+  text-align:center;
+}
 h1{color:var(--brand);}
 .wrap{max-width:var(--card-w);margin:0 auto;}
 .card{
-  background:#fff;padding:20px;border-radius:12px;
-  box-shadow:0 4px 16px rgba(0,0,0,.08);text-align:left;margin-bottom:20px;
+  background:#fff;padding:22px;border-radius:14px;
+  box-shadow:0 5px 16px rgba(0,0,0,.07);
+  text-align:left;margin-bottom:22px;
 }
 label{font-weight:700;display:block;margin-top:10px;}
-input{width:100%;padding:10px;margin-top:5px;border:1px solid #ccc;border-radius:8px;}
-.row{display:flex;flex-wrap:wrap;gap:12px;}
+input{
+  width:100%;padding:10px;margin-top:5px;
+  border:1px solid #ccc;border-radius:8px;font-size:1rem;
+}
+.row{display:flex;flex-wrap:wrap;gap:14px;}
 .row>div{flex:1 1 260px;}
 .btn{
-  width:100%;padding:14px;margin-top:20px;border:none;border-radius:10px;
-  background:var(--brand);color:#fff;font-size:1.1rem;cursor:pointer;
+  width:100%;padding:15px;margin-top:20px;border:none;
+  border-radius:10px;background:var(--brand);color:#fff;
+  font-size:1.13rem;cursor:pointer;font-weight:bold;
 }
 table{width:100%;border-collapse:collapse;margin-top:20px;}
 th,td{padding:10px;border:1px solid #eee;}
 th{background:#eef4ff;}
-.switch{position:relative;width:32px;height:18px;display:inline-block;}
+.switch{position:relative;width:36px;height:20px;display:inline-block;}
 .switch input{opacity:0;width:0;height:0;}
 .slider{
   position:absolute;inset:0;background:#cfe2ff;border-radius:999px;cursor:pointer;
 }
 .slider:before{
-  content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:#fff;
+  content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;
   border-radius:50%;transition:.25s;
 }
 input:checked + .slider{background:#a9c4ff;}
-input:checked + .slider:before{transform:translateX(14px);}
-.meta{margin-top:16px;font-size:0.9rem;white-space:pre-line;}
-.meta .err{color:#b00020;font-weight:700;}
+input:checked + .slider:before{transform:translateX(16px);}
+.err{
+  color:#cc0000;font-weight:700;margin-top:14px;font-size:0.95rem;
+}
+.meta{
+  margin-top:14px;font-size:0.9rem;white-space:pre-line;color:#333;
+}
 </style>
 </head>
 
 <body>
-<h1>양액 계산기 (EC+Ca+Mg+K:N 선형해)</h1>
+
+<h1>안정형 양액 계산기 (EC·Ca·Mg 정확 + K:N 근사)</h1>
 
 <div class="wrap">
-  <div class="card">
+<div class="card">
 
-    <h2>기본 입력</h2>
-    <div class="row">
-      <div><label>배합 용량 (L)</label><input id="V" type="number" step="0.1"></div>
-      <div><label>목표 EC (mS/cm)</label><input id="ECt" type="number" step="0.01"></div>
-    </div>
+<h2>기본 입력</h2>
+<div class="row">
+  <div><label>배합 용량 (L)</label><input id="V" type="number" step="0.1"></div>
+  <div><label>목표 EC (mS/cm)</label><input id="ECt" type="number" step="0.01"></div>
+</div>
 
-    <h3>EC 증가량</h3>
-    <div class="row">
-      <div><label>AB 500µL → ΔEC</label><input id="dAB" type="number" step="0.01"></div>
-      <div><label>K₂SO₄ 250µL → ΔEC</label><input id="dK"  type="number" step="0.01"></div>
-      <div><label>MgSO₄ 250µL → ΔEC</label><input id="dMg" type="number" step="0.01"></div>
-      <div><label>Ca(NO₃)₂ 250µL → ΔEC</label><input id="dCa" type="number" step="0.01"></div>
-    </div>
+<h3>EC 증가량</h3>
+<div class="row">
+  <div><label>AB 500µL → ΔEC</label><input id="dAB" type="number" step="0.01"></div>
+  <div><label>K₂SO₄ 250µL → ΔEC</label><input id="dK"  type="number" step="0.01"></div>
+  <div><label>MgSO₄ 250µL → ΔEC</label><input id="dMg" type="number" step="0.01"></div>
+  <div><label>Ca(NO₃)₂ 250µL → ΔEC</label><input id="dCa" type="number" step="0.01"></div>
+</div>
 
-    <h3>목표 Ca / Mg (mg/L)</h3>
-    <div class="row">
-      <div><label>Ca 목표 (mg/L)</label><input id="CaT" type="number"></div>
-      <div><label>Mg 목표 (mg/L)</label><input id="MgT" type="number"></div>
-    </div>
+<h3>목표 Ca / Mg (mg/L)</h3>
+<div class="row">
+  <div><label>Ca 목표</label><input id="CaT" type="number"></div>
+  <div><label>Mg 목표</label><input id="MgT" type="number"></div>
+</div>
 
-    <h3>K:N 비 (근사 X, 그대로 적용)</h3>
-    <div class="row">
-      <div><label>K 값</label><input id="Kr" type="number"></div>
-      <div><label>N 값</label><input id="Nr" type="number"></div>
-    </div>
+<h3>K:N 비 (근사 적용)</h3>
+<div class="row">
+  <div><label>K 값</label><input id="Kr" type="number"></div>
+  <div><label>N 값</label><input id="Nr" type="number"></div>
+</div>
 
-    <h3>단위</h3>
-    <span>µL</span>
-    <label class="switch"><input id="unit" type="checkbox"><span class="slider"></span></label>
-    <span>mL</span>
+<h3>단위</h3>
+<span>µL</span>
+<label class="switch"><input id="unit" type="checkbox"><span class="slider"></span></label>
+<span>mL</span>
 
-    <button class="btn" id="calc">계산하기</button>
+<button class="btn" id="calc">계산하기</button>
 
-    <div id="result"></div>
-    <div id="meta" class="meta"></div>
+<div id="result"></div>
+<div id="meta" class="meta"></div>
 
-  </div>
+</div>
 </div>
 
 <script>
 "use strict";
 
-/* ===== DOM ===== */
-const V_el   = document.getElementById("V");
-const ECt_el = document.getElementById("ECt");
-const dAB_el = document.getElementById("dAB");
-const dK_el  = document.getElementById("dK");
-const dMg_el = document.getElementById("dMg");
-const dCa_el = document.getElementById("dCa");
-const CaT_el = document.getElementById("CaT");
-const MgT_el = document.getElementById("MgT");
-const Kr_el  = document.getElementById("Kr");
-const Nr_el  = document.getElementById("Nr");
-const unit_el= document.getElementById("unit");
-const resultEl=document.getElementById("result");
-const metaEl  =document.getElementById("meta");
-
-/* ===== 자동저장 ===== */
-const STORE_KEY="nutri_linear_v1";
+/* ===========================
+   자동 저장
+=========================== */
+const STORE_KEY="safe_sweep_v1";
 const fields=["V","ECt","dAB","dK","dMg","dCa","CaT","MgT","Kr","Nr","unit"];
 
 function saveData(){
@@ -130,127 +132,146 @@ function loadData(){
   });
 }
 fields.forEach(id=>{
-  document.getElementById(id).addEventListener("input",()=>setTimeout(saveData,200));
+  document.getElementById(id).addEventListener("input",()=>setTimeout(saveData,150));
 });
 loadData();
 
-/* ===== 상수: AB 성분 (mg/mL) ===== */
+/* ===========================
+   AB 성분 (mg/mL)
+=========================== */
 const AB_N  = 47.40;
 const AB_K  = 35.10;
 const AB_Ca = 18.50;
 const AB_Mg = 4.13;
 
-/* MgSO4, Ca(NO3)2, K2SO4 원소 함량 계산 */
-const AT = { Mg:24.305, Ca:40.078, O:15.999 };
-const Mg_frac = AT.Mg / (AT.Mg + AT.O);
-const Ca_frac = AT.Ca / (AT.Ca + AT.O);
+/* ===========================
+   보충제 성분 (mg/mL)
+=========================== */
+const AT={Mg:24.305,Ca:40.078,O:15.999};
+const Mg_frac=AT.Mg/(AT.Mg+AT.O);
+const Ca_frac=AT.Ca/(AT.Ca+AT.O);
 
-const mgMg_per_mL = 0.16 * Mg_frac * 0.10 * 1000;
-const mgCa_per_mL = 0.26 * Ca_frac * 0.10 * 1000;
+const mgMg_mL = 0.16 * Mg_frac * 100;    // 10% 용액 → 0.1 × 1000
+const mgCa_mL = 0.26 * Ca_frac * 100;    // mg/mL 단위
 
-const MW_K2SO4 = 174.259;
-const K_frac = (39.0983*2)/MW_K2SO4;
-const mgK_per_mL = K_frac * 0.10 * 1000;
+const MW_K2SO4=174.259;
+const K_frac=(39.0983*2)/MW_K2SO4;
+const mgK_mL = K_frac * 100;
 
-/* ===== 4x4 선형 방정식 풀이 ===== */
-function solve4(A,b){
-  // Gauss-Jordan
-  A = A.map(r=>r.slice());
-  b = b.slice();
-  const n=4;
-  for(let i=0;i<n;i++){
-    // pivot 선택
-    let maxRow=i;
-    for(let r=i+1;r<n;r++){
-      if(Math.abs(A[r][i])>Math.abs(A[maxRow][i])) maxRow=r;
+/* ===========================
+   3×3 선형 방정식 풀기
+=========================== */
+function solve3(A,b){
+  A=A.map(r=>r.slice());
+  b=b.slice();
+  for(let i=0;i<3;i++){
+    let max=i;
+    for(let r=i+1;r<3;r++){
+      if(Math.abs(A[r][i])>Math.abs(A[max][i])) max=r;
     }
-    if(Math.abs(A[maxRow][i])<1e-12) return null; // 해 없음/특이
-    if(maxRow!==i){
-      [A[i],A[maxRow]]=[A[maxRow],A[i]];
-      [b[i],b[maxRow]]=[b[maxRow],b[i]];
+    if(Math.abs(A[max][i])<1e-12) return null;
+    if(max!==i){
+      [A[i],A[max]]=[A[max],A[i]];
+      [b[i],b[max]]=[b[max],b[i]];
     }
     const piv=A[i][i];
-    for(let c=i;c<n;c++) A[i][c]/=piv;
+    for(let c=i;c<3;c++) A[i][c]/=piv;
     b[i]/=piv;
-    for(let r=0;r<n;r++){
+    for(let r=0;r<3;r++){
       if(r===i) continue;
       const m=A[r][i];
-      for(let c=i;c<n;c++) A[r][c]-=m*A[i][c];
+      for(let c=i;c<3;c++) A[r][c]-=m*A[i][c];
       b[r]-=m*b[i];
     }
   }
   return b;
 }
 
-function isBad(x){
-  return !Number.isFinite(x) || x<0;
-}
+/* ===========================
+   계산 버튼
+=========================== */
+document.getElementById("calc").onclick=()=>{
 
-/* ===== 계산 버튼 ===== */
-document.getElementById("calc").addEventListener("click",()=>{
-  metaEl.textContent="";
-  resultEl.innerHTML="";
+  const V=parseFloat(V.value);
+  const ECt=parseFloat(ECt.value);
 
-  const V   = parseFloat(V_el.value);
-  const ECt = parseFloat(ECt_el.value);
+  const sAB=parseFloat(dAB.value)/500;
+  const sK =parseFloat(dK.value)/250;
+  const sMg=parseFloat(dMg.value)/250;
+  const sCa=parseFloat(dCa.value)/250;
 
-  const dAB = parseFloat(dAB_el.value)/500;
-  const dK  = parseFloat(dK_el.value)/250;
-  const dMg = parseFloat(dMg_el.value)/250;
-  const dCa = parseFloat(dCa_el.value)/250;
+  const CaT=parseFloat(CaT.value);
+  const MgT=parseFloat(MgT.value);
 
-  const CaT = parseFloat(CaT_el.value);
-  const MgT = parseFloat(MgT_el.value);
+  const Krv=parseFloat(Kr.value);
+  const Nrv=parseFloat(Nr.value);
+  const KNtarget = Krv/Nrv;
 
-  const Krv = parseFloat(Kr_el.value);
-  const Nrv = parseFloat(Nr_el.value);
-
-  if(![V,ECt,dAB,dK,dMg,dCa,CaT,MgT,Krv,Nrv].every(Number.isFinite) || V<=0){
-    metaEl.innerHTML="<span class='err'>입력을 다시 확인해줘.</span>";
+  if(![V,ECt,sAB,sK,sMg,sCa,CaT,MgT,Krv,Nrv].every(Number.isFinite)){
+    meta.textContent="❌ 입력값 오류";
     return;
   }
 
-  // EC 기울기
-  const sAB=dAB, sK=dK, sMg=dMg, sCa=dCa;
+  const EC_RHS = ECt * V;
+  const Ca_RHS = CaT * V * 1000;
+  const Mg_RHS = MgT * V * 1000;
 
-  // 4x4 시스템 구성
-  // 미지수: [vAB, vK, vMg, vCa]
-  const A=[
-    [ sAB,            sK,          sMg,          sCa ],                       // EC
-    [ Nrv*AB_K-Krv*AB_N, Nrv*mgK_per_mL, 0,            0   ],                // K:N
-    [ AB_Ca,          0,           0,            mgCa_per_mL ],              // Ca
-    [ AB_Mg,          0,           mgMg_per_mL,  0 ]                         // Mg
-  ];
-  const b=[
-    ECt*V,
-    0,
-    CaT*V*1000,
-    MgT*V*1000
-  ];
+  const vK_max = Math.max(0,(EC_RHS / sK) * 0.99);
 
-  const sol=solve4(A,b);
-  if(!sol){
-    metaEl.innerHTML="<span class='err'>이 조합으로는 해가 존재하지 않아.</span>";
+  let best=null, bestErr=1e99;
+
+  const steps=700;
+  for(let i=0;i<=steps;i++){
+    const vK = vK_max * i/steps;
+
+    const A=[
+      [ sAB,      sMg,      sCa ],
+      [ AB_Ca,    0,        mgCa_mL ],
+      [ AB_Mg,    mgMg_mL,  0 ]
+    ];
+    const b=[
+      EC_RHS - sK*vK,
+      Ca_RHS,
+      Mg_RHS
+    ];
+
+    const sol = solve3(A,b);
+    if(!sol) continue;
+
+    const [vAB, vMg, vCa] = sol;
+
+    if(vAB<0 || vMg<0 || vCa<0) continue;
+
+    const K = vAB*AB_K + vK*mgK_mL;
+    const N = vAB*AB_N;
+    if(N<=0) continue;
+
+    const err = (K/N - KNtarget)**2;
+
+    if(err < bestErr){
+      bestErr = err;
+      best = {vAB, vK, vMg, vCa};
+    }
+  }
+
+  if(!best){
+    result.innerHTML="";
+    meta.textContent="❌ 현재 목표 조합은 EC·Ca·Mg를 만족하면서 K:N을 근사할 수 있는 조합이 없음.";
     return;
   }
-  const [vAB,vK,vMgS,vCaS]=sol;
 
-  if([vAB,vK,vMgS,vCaS].some(isBad)){
-    metaEl.innerHTML="<span class='err'>현재 목표 EC / Ca / Mg / K:N 조합은 물리적으로 불가능한 해를 요구해. (음수 발생)</span>";
-    return;
-  }
+  const {vAB, vK, vMg, vCa}=best;
 
-  // 단위 변환
-  const factor = unit_el.checked ? 1/1000 : 1;
-  const uname  = unit_el.checked ? "mL" : "µL";
+  const unit = unit.checked ? 1/1000 : 1;
+  const uname = unit.checked ? "mL" : "µL";
 
-  const Aamt = (vAB/2)*factor;
-  const Bamt = (vAB/2)*factor;
-  const Kamp = vK*factor;
-  const Mgamp= vMgS*factor;
-  const Caamp= vCaS*factor;
+  const Aamt=(vAB/2)*unit;
+  const Bamt=(vAB/2)*unit;
+  const Kamp=vK*unit;
+  const Mgamp=vMg*unit;
+  const Caamp=vCa*unit;
 
-  resultEl.innerHTML=`
+  result.innerHTML=`
   <table>
     <tr><th>원액</th><th>주입량 (${uname})</th></tr>
     <tr><td>A액</td><td>${Aamt.toFixed(2)}</td></tr>
@@ -259,12 +280,19 @@ document.getElementById("calc").addEventListener("click",()=>{
     <tr><td>MgSO₄ 10%</td><td>${Mgamp.toFixed(2)}</td></tr>
     <tr><td>Ca(NO₃)₂ 10%</td><td>${Caamp.toFixed(2)}</td></tr>
     <tr><td><b>총합</b></td><td><b>${(Aamt+Bamt+Kamp+Mgamp+Caamp).toFixed(2)}</b></td></tr>
-  </table>`;
+  </table>
+  `;
 
-  metaEl.textContent =
-`EC, Ca, Mg, K:N 비를 4개의 1차 방정식으로 풀어서 구한 해야.
-해가 음수로 떨어지는 경우는 "불가능한 조합"으로 처리해서 막았어.`;
-});
+  meta.textContent =
+`✔ EC / Ca / Mg 정확히 충족됨
+✔ K:N 비는 가능한 범위에서 최적 근사됨
+✔ 음수 해 없음 (안전 sweep 방식)
+
+실제 K:N ≈ ${( (vAB*AB_K + vK*mgK_mL) / (vAB*AB_N) ).toFixed(3)}
+목표 K:N = ${KNtarget.toFixed(3)}
+오차 = ${bestErr.toExponential(3)}`;
+};
 </script>
+
 </body>
 </html>
