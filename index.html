@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title> 양액 계산기</title>
+<title>1최적화 기반 양액 계산기</title>
 
 <style>
 :root{ --brand:#007bff; --brand-dark:#0056b3; --card-w:900px; }
@@ -58,8 +58,6 @@ input:checked + .slider:before{transform:translateX(14px);}
 .bad{color:#b00020; font-weight:700;}
 </style>
 </head>
-
-
 <body>
 <h1>최적화 기반 양액 계산기</h1>
 
@@ -106,34 +104,80 @@ input:checked + .slider:before{transform:translateX(14px);}
   </div>
 </div>
 
-
 <script>
 "use strict";
 
-/* ------------------ AB 성분 (mg/mL) ------------------ */
+/* === 자동저장 엔진 === */
+const STORE_KEY = "nutriCalc_v1";
+
+/* 저장할 입력 요소 ID들 */
+const fields = ["V","ECt","dAB","dK","dMg","dCa","CaT","MgT","Kr","Nr","unit"];
+
+/* 저장 함수 */
+function saveData(){
+  const obj = {};
+  fields.forEach(id=>{
+    const el = document.getElementById(id);
+    obj[id] = (el.type==="checkbox") ? el.checked : el.value;
+  });
+  localStorage.setItem(STORE_KEY, JSON.stringify(obj));
+}
+
+/* 로드 함수 */
+function loadData(){
+  const raw = localStorage.getItem(STORE_KEY);
+  if(!raw) return;
+  const obj = JSON.parse(raw);
+  fields.forEach(id=>{
+    if(obj[id] !== undefined){
+      const el = document.getElementById(id);
+      if(el.type==="checkbox") el.checked = obj[id];
+      else el.value = obj[id];
+    }
+  });
+}
+
+/* 입력 변경시 자동저장(0.3초 delay) */
+let saveTimer=null;
+function autoSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(saveData,300);
+}
+
+/* 이벤트 연결 */
+fields.forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener("input", autoSave);
+});
+
+/* 페이지 시작시 로드 */
+loadData();
+
+/* === 아래는 계산 로직 (이전 안정버전 그대로) === */
+
+/* AB 성분 (mg/mL) */
 const AB_N  = 47.40;
 const AB_K  = 35.10;
 const AB_Ca = 18.50;
 const AB_Mg = 4.13;
 
-/* ------------------ MgSO₄ / Ca(NO₃)₂ / K₂SO₄ ------------------ */
-const AT = { Mg:24.305, Ca:40.078, O:15.999 };
+/* MgSO₄ / Ca(NO₃)₂ 원소함량 → 10% 용액 mg/mL */
+const AT={Mg:24.305, Ca:40.078, O:15.999};
 const M_MgO = AT.Mg + AT.O;
 const M_CaO = AT.Ca + AT.O;
 
 const Mg_frac = AT.Mg / M_MgO;
 const Ca_frac = AT.Ca / M_CaO;
 
-/* 10% 용액 기준 원소 함량 (mg/mL) */
 const mgMg_per_mL = 0.16 * Mg_frac * 0.10 * 1000;
 const mgCa_per_mL = 0.26 * Ca_frac * 0.10 * 1000;
 
-/* K₂SO₄ 10% 용액 원소 함량 */
+/* K₂SO₄ */
 const MW_K2SO4 = 174.259;
 const K_frac = (39.0983*2) / MW_K2SO4;
 const mgK_per_mL = K_frac * 0.10 * 1000;
 
-/* ------------------ 3x3 선형방정식 ------------------ */
+/* 3x3 선형 */
 function solve3(A,b){
   A=A.map(r=>r.slice());
   b=b.slice();
@@ -153,7 +197,7 @@ function solve3(A,b){
     b[i]/=p;
     for(let r=0;r<3;r++){
       if(r===i) continue;
-      const m=A[r][i];
+      let m=A[r][i];
       for(let c=i;c<3;c++) A[r][c]-=m*A[i][c];
       b[r]-=m*b[i];
     }
@@ -161,26 +205,25 @@ function solve3(A,b){
   return b;
 }
 
-/* ------------------ K:N 오차 함수 ------------------ */
+/* K:N error */
 function KN_error(vAB, vK){
   const K = vAB*AB_K + vK*mgK_per_mL;
   const N = vAB*AB_N;
   if(N<=0) return 1e12;
 
-  const Kr = parseFloat(Kr_el.value);
-  const Nr = parseFloat(Nr_el.value);
+  const Kr=parseFloat(Kr_el.value);
+  const Nr=parseFloat(Nr_el.value);
   const target = Kr/Nr;
 
   return (K/N - target)**2;
 }
 
-/* ------------------ Golden-section search ------------------ */
-function minimize(vMin, vMax, f){
-  const phi = (1+Math.sqrt(5))/2;
-  let a=vMin, b=vMax;
+/* golden section */
+function minimize(a,b,f){
+  const phi=(1+Math.sqrt(5))/2;
   let c=b-(b-a)/phi;
   let d=a+(b-a)/phi;
-  while(Math.abs(b-a)>1e-5){
+  while(Math.abs(b-a)>1e-4){
     if(f(c)<f(d)){
       b=d; d=c; c=b-(b-a)/phi;
     } else {
@@ -190,7 +233,7 @@ function minimize(vMin, vMax, f){
   return (a+b)/2;
 }
 
-/* ------------------ DOM ------------------ */
+/* DOM */
 const V_el=document.getElementById("V");
 const ECt_el=document.getElementById("ECt");
 const dAB_el=document.getElementById("dAB");
@@ -203,7 +246,7 @@ const Kr_el=document.getElementById("Kr");
 const Nr_el=document.getElementById("Nr");
 const unit_el=document.getElementById("unit");
 
-/* ------------------ 계산 ------------------ */
+/* 계산 */
 document.getElementById("calc").onclick = ()=>{
 
   const V   = parseFloat(V_el.value);
@@ -217,24 +260,24 @@ document.getElementById("calc").onclick = ()=>{
   const CaT = parseFloat(CaT_el.value);
   const MgT = parseFloat(MgT_el.value);
 
-  /* vK의 upper bound = EC 기반 */
   const max_vK = Math.max(1, (ECt*V)/dK * 0.95);
 
   function solveFor(vK){
-    const RHS_EC = ECt*V - dK*vK;  // 오른쪽
-    if(RHS_EC < 0) return [ -1, -1, -1 ];
+    const RHS_EC = ECt*V - dK*vK;
+    if(RHS_EC < 0) return [-1,-1,-1];
 
-    const B = [
+    const b = [
       RHS_EC,
-      CaT * V * 1000,
-      MgT * V * 1000
+      CaT*V*1000,
+      MgT*V*1000
     ];
     const A = [
-      [ dAB,   dMg,    dCa ],
-      [ AB_Ca, 0,      mgCa_per_mL ],
-      [ AB_Mg, mgMg_per_mL, 0 ]
+      [dAB,  dMg,        dCa],
+      [AB_Ca, 0,         mgCa_per_mL],
+      [AB_Mg, mgMg_per_mL, 0]
     ];
-    return solve3(A,B);  // [vAB, vMg, vCa]
+
+    return solve3(A,b);
   }
 
   function F(vK){
@@ -246,7 +289,6 @@ document.getElementById("calc").onclick = ()=>{
   const vK_best = minimize(0,max_vK,F);
   const [vAB_best,vMg_best,vCa_best] = solveFor(vK_best);
 
-  /* 단위 변환 */
   const unit = unit_el.checked ? 1/1000 : 1;
   const uname = unit_el.checked ? "mL" : "µL";
 
@@ -269,15 +311,15 @@ document.getElementById("calc").onclick = ()=>{
   `;
 
   document.getElementById("meta").textContent =
-`EC, Ca, Mg는 정확하게 충족됨.
-K:N은 가능한 최적으로 근사됨.
+`EC, Ca, Mg는 정확히 충족됩니다.
+K:N은 가능한 최적으로 근사됨(표시는 하지 않음).
 
 AB 성분 (mg/mL):
 N=${AB_N}, K=${AB_K}, Ca=${AB_Ca}, Mg=${AB_Mg}
 
-MgSO₄ 용액: ${mgMg_per_mL.toFixed(2)} mg Mg / mL  
-Ca(NO₃)₂ 용액: ${mgCa_per_mL.toFixed(2)} mg Ca / mL  
-K₂SO₄ 용액: ${mgK_per_mL.toFixed(2)} mg K / mL`;
+MgSO₄ 용액: ${mgMg_per_mL.toFixed(2)} mg Mg/mL  
+Ca(NO₃)₂ 용액: ${mgCa_per_mL.toFixed(2)} mg Ca/mL  
+K₂SO₄ 용액: ${mgK_per_mL.toFixed(2)} mg K/mL`;
 };
 </script>
 
