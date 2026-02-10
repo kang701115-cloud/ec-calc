@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액계산기</title>
+<title>양액 배합 계산기</title>
 
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#007BFF">
@@ -220,6 +220,9 @@ details > summary{
     <div class="meta" id="metaS"></div>
   </div>
 
+  <!-- 칼륨+Mg 자동 (K/Mg는 g, AB는 mL) -->
+  <div class="card hidden" id="cardK">
+    <h2>칼륨+Mg / N:K&gt;1:1.5면 Mg 자동 (K:Mg=4:1)</h2>
 
     <div class="row">
       <div>
@@ -637,5 +640,3 @@ $("btnPresetClearInModal").addEventListener("click", ()=>{ clearPreset(); closeP
 </script>
 </body>
 </html>
-
-
