@@ -1,13 +1,12 @@
 "use strict";
 
-const CACHE_NAME = "nutri-pwa-v5";
+const CACHE_NAME = "nutri-pwa-v6";
 const ASSETS = [
   "./",
   "./index.html",
-  "./manifest.json"
-  // 아이콘 있으면 캐시 권장
-  // "./icon-192.png",
-  // "./icon-512.png"
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
