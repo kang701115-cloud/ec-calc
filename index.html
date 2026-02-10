@@ -325,9 +325,11 @@ const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4; // K 질량분율
 const F_K_ELEM_PER_G_SOLUTION = 0.10 * MASSFRAC_K_IN_K2SO4; // (용액 g)당 K g
 
 // MgSO4 (anhydrous 기준: Mg 질량분율≈20.2%)
-const M_MgSO4 = ATOMIC.Mg + ATOMIC.S + 4*ATOMIC.O;
-const MASSFRAC_MG_IN_MGSO4 = ATOMIC.Mg / M_MgSO4;
-const F_Mg_ELEM_PER_G_SOLUTION = 0.10 * MASSFRAC_MG_IN_MgSO4; // (용액 g)당 Mg g
+const M_MGSO4 = ATOMIC.Mg + ATOMIC.S + 4*ATOMIC.O;
+const MASSFRAC_MG_IN_MGSO4 = ATOMIC.Mg / M_MGSO4;
+
+const F_Mg_ELEM_PER_G_SOLUTION = 0.10 * MASSFRAC_MG_IN_MGSO4;
+ // (용액 g)당 Mg g
 
 // ✅ 기본 Mg 용액 EC증분(가정: 10% MgSO4 용액 전도도 ~41.4 mS/cm, 0.5L에 250uL → 약 0.0207)
 const DEFAULT_DE_MG_250 = 0.0207;
@@ -491,7 +493,8 @@ function calcK(){
   const doMg = (r > 1.5);
 
   if(doMg){
-    cMg = cK * (rhoK*MASSFRAC_K_IN_K2SO4) / (kMgRatio * rhoMg * MASSFRAC_MG_IN_MgSO4);
+   cMg = cK * (rhoK*MASSFRAC_K_IN_K2SO4) / (kMgRatio * rhoMg * MASSFRAC_MG_IN_MGSO4);
+
   }
 
   // 총 EC = (s*vAB + g*(cK*vAB) + m*(cMg*vAB)) / V?  (기존 코드 구조상 vAB가 이미 µL 단위로 들어감)
@@ -700,3 +703,4 @@ $("btnPresetClearInModal").addEventListener("click", ()=>{ clearPreset(); closeP
 </script>
 </body>
 </html>
+
