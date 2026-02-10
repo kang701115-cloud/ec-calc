@@ -454,16 +454,20 @@ function recalc(){ isKMode()? calcK(): calcSimple(); }
 
 /* ===== 프리셋 잠금 ===== */
 function lockByPreset(locked){
-  const ids = ["ECt","tK","tN"]; // 프리셋 적용 시 잠글 필드
+  const ids = ["ECt","dE_AB_500","dE_K_250","rhoK","tK","tN"]; // ✅ 전부 잠금
+
   ids.forEach(id=>{
     const el = $(id);
     if(!el) return;
+
     const box = el.parentElement; // row > div
     if(locked){
       el.setAttribute("readonly","true");
+      el.setAttribute("tabindex","-1");
       if(box) box.classList.add("locked");
     }else{
       el.removeAttribute("readonly");
+      el.removeAttribute("tabindex");
       if(box) box.classList.remove("locked");
     }
   });
@@ -562,3 +566,4 @@ $("btnPresetClear").addEventListener("click", ()=>{ clearPreset(); });
 </script>
 </body>
 </html>
+
