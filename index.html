@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액 배합 계산기</title>
+<title>양액 계산기</title>
 
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#007BFF">
@@ -211,8 +211,8 @@ details > summary{
     </div>
     <div class="row">
       <div>
-        <label for="dE_AB_500S">AB 합 500 µL(=A 250 + B 250) → EC 증가 (mS/cm)</label>
-        <input type="number" id="dE_AB_500S" step="0.01" min="0" placeholder="예: 0.80">
+        <label for="dE_AB_1mLEach_100mLS">AB: 100 mL에 A 1 mL + B 1 mL → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_AB_1mLEach_100mLS" step="0.01" min="0" placeholder="예: 0.80">
       </div>
     </div>
     <button class="btn" id="btnCalcS">계산하기</button>
@@ -220,9 +220,9 @@ details > summary{
     <div class="meta" id="metaS"></div>
   </div>
 
-  <!-- 칼륨+Mg 자동 (모두 g 기반) -->
+  <!-- 칼륨+Mg 자동 (K/Mg는 g, AB는 mL) -->
   <div class="card hidden" id="cardK">
-    <h2>칼륨+Mg (g 기준) / N:K&gt;1:1.5면 Mg 자동</h2>
+    <h2>칼륨+Mg / N:K&gt;1:1.5면 Mg 자동 (K:Mg=4:1)</h2>
 
     <div class="row">
       <div>
@@ -237,8 +237,8 @@ details > summary{
 
     <div class="row">
       <div>
-        <label for="dE_AB_500">AB 합 500 µL(=A 250 + B 250) → EC 증가 (mS/cm)</label>
-        <input type="number" id="dE_AB_500" step="0.01" min="0" placeholder="예: 0.80">
+        <label for="dE_AB_1mLEach_100mL">AB: 100 mL에 A 1 mL + B 1 mL → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_AB_1mLEach_100mL" step="0.01" min="0" placeholder="예: 0.80">
       </div>
       <div>
         <label for="tK">목표 K</label>
@@ -253,14 +253,14 @@ details > summary{
     <div class="row">
       <div>
         <label for="dE_K_1g_100mL">K₂SO₄: 100 mL에 1 g(=1%) → EC (mS/cm)</label>
-        <input type="number" id="dE_K_1g_100mL" step="0.1" min="0">
+        <input type="number" id="dE_K_1g_100mL" step="0.1" min="0" value="11.2">
       </div>
       <div>
         <label for="dE_Mg_1g_100mL">MgSO₄: 100 mL에 1 g(=1%) → EC (mS/cm)</label>
-        <input type="number" id="dE_Mg_1g_100mL" step="0.1" min="0">
+        <input type="number" id="dE_Mg_1g_100mL" step="0.1" min="0" value="7.6">
       </div>
       <div>
-        <label for="KMgRatio">K:Mg 목표비 (질량비, 기본 4:1)</label>
+        <label for="KMgRatio">K:Mg 목표비 (질량비)</label>
         <input type="number" id="KMgRatio" step="0.1" min="0.1" value="4.0">
       </div>
     </div>
@@ -319,13 +319,13 @@ const setHTML = (id,html)=>$(id).innerHTML=html;
 const setText = (id,txt)=>$(id).textContent=txt;
 
 /* ===== localStorage KEY ===== */
-const KEY_SIMPLE="nutri_calc_simple_v6";
-const KEY_KMODE ="nutri_calc_kmode_v6";
-const KEY_MODE ="nutri_calc_mode_v6";
-const KEY_UNIT ="nutri_calc_unit_v6";
-const KEY_PRESET="nutri_calc_preset_v6";
+const KEY_SIMPLE="nutri_calc_simple_v7";
+const KEY_KMODE ="nutri_calc_kmode_v7";
+const KEY_MODE ="nutri_calc_mode_v7";
+const KEY_UNIT ="nutri_calc_unit_v7";
+const KEY_PRESET="nutri_calc_preset_v7";
 
-/* ===== 프리셋(사진 기반: 4단계) ===== */
+/* ===== 프리셋 ===== */
 const PRESETS = [
   { id:"transplant", name:"정식기(정식~활착)", ec:(0.7+0.9)/2, nk:1.0,
     note:"목적: 뿌리 확장\nEC 0.7~0.9 → 0.80\nN:K 1:1" },
@@ -342,7 +342,7 @@ function hasPreset(){ return !!localStorage.getItem(KEY_PRESET); }
 function isKMode(){ return !!JSON.parse(localStorage.getItem(KEY_MODE)||"false"); }
 function isUnitML(){ return !!JSON.parse(localStorage.getItem(KEY_UNIT)||"false"); }
 
-/* ===== UI 적용 ===== */
+/* ===== UI ===== */
 function applyModeUI(isK){
   $("cardSimple").classList.toggle("hidden",isK);
   $("cardK").classList.toggle("hidden",!isK);
@@ -364,7 +364,7 @@ function loadSimple(){
   for(const k in d) if($(k)) $(k).value=d[k];
 }
 function saveSimple(){
-  const d={ VbatchS:getNum("VbatchS"),ECtS:getNum("ECtS"),dE_AB_500S:getNum("dE_AB_500S") };
+  const d={ VbatchS:getNum("VbatchS"), ECtS:getNum("ECtS"), dE_AB_1mLEach_100mLS:getNum("dE_AB_1mLEach_100mLS") };
   localStorage.setItem(KEY_SIMPLE,JSON.stringify(d));
 }
 function loadK(){
@@ -374,7 +374,7 @@ function loadK(){
 function saveK(){
   const d={
     Vbatch:getNum("Vbatch"), ECt:getNum("ECt"),
-    dE_AB_500:getNum("dE_AB_500"),
+    dE_AB_1mLEach_100mL:getNum("dE_AB_1mLEach_100mL"),
     tK:getNum("tK"), tN:getNum("tN"),
     dE_K_1g_100mL:getNum("dE_K_1g_100mL"),
     dE_Mg_1g_100mL:getNum("dE_Mg_1g_100mL"),
@@ -405,32 +405,34 @@ function tableK(vA_uL, vB_uL, k2so4_g, mgso4_g){
 
 /* ===== 계산(양액만) ===== */
 function calcSimple(){
-  const V=getNum("VbatchS"),E=getNum("ECtS"),d=getNum("dE_AB_500S");
+  const V=getNum("VbatchS"),E=getNum("ECtS"),dAB=getNum("dE_AB_1mLEach_100mLS");
   setHTML("resultS",""); setText("metaS","");
-  if([V,E,d].some(x=>!Number.isFinite(x)||x<0)){ setHTML("resultS","입력 확인");return; }
+  if([V,E,dAB].some(x=>!Number.isFinite(x)||x<0)){ setHTML("resultS","입력 확인");return; }
   if(V===0){ setHTML("resultS","부피 0 불가");return; }
+  if(dAB===0){ setHTML("resultS","AB EC증분 0 불가");return; }
 
-  // 모델: E = (d/500) * (vAB/V)
-  const s=d/500;
-  const vAB=(E/s)*V;   // µL
-  const vA=vAB/2, vB=vAB/2;
+  // 100mL에 A1mL+B1mL(총 2mL) → 20 mL/L
+  const aAB = dAB / 20;         // EC per (mL/L)
+  const vAB_mL = (E * V) / aAB; // A+B 합 (mL)
+  const vA_uL = (vAB_mL/2) * 1000;
+  const vB_uL = (vAB_mL/2) * 1000;
 
   setHTML("resultS",`
     <table>
       <thead><tr><th>항목</th><th>값</th><th>단위</th></tr></thead>
       <tbody>
-        <tr><td>A액</td><td>${cellVol(vA)}</td><td>${unitName()}</td></tr>
-        <tr><td>B액</td><td>${cellVol(vB)}</td><td>${unitName()}</td></tr>
+        <tr><td>A액</td><td>${cellVol(vA_uL)}</td><td>${unitName()}</td></tr>
+        <tr><td>B액</td><td>${cellVol(vB_uL)}</td><td>${unitName()}</td></tr>
       </tbody>
     </table>
   `);
   saveSimple();
 }
 
-/* ===== 계산(칼륨+Mg 자동, g 기준) ===== */
+/* ===== 계산(칼륨+Mg 자동) ===== */
 function calcK(){
   const V=getNum("Vbatch"), E=getNum("ECt"),
-        dAB=getNum("dE_AB_500"),
+        dAB=getNum("dE_AB_1mLEach_100mL"),
         tk=getNum("tK"), tn=getNum("tN"),
         dK_1p=getNum("dE_K_1g_100mL"),
         dMg_1p=getNum("dE_Mg_1g_100mL"),
@@ -444,55 +446,54 @@ function calcK(){
   if(V===0){ setHTML("result","부피 0 불가");return; }
   if(tn<=0){ setHTML("result","tN 0 불가");return; }
   if(kMgRatio<=0){ setHTML("result","K:Mg 비율 0 불가");return; }
+  if(dAB===0){ setHTML("result","AB EC증분 0 불가");return; }
 
   const r = tk/tn;
 
-  // AB: E = (dAB/500)*(vAB/V)
-  const s = dAB/500; // EC per (µL/L)
+  // AB: 100mL에 A1mL+B1mL(총 2mL) => 20 mL/L
+  const aAB = dAB / 20;  // EC per (mL/L)
 
-  // 1% (1g/100mL) = 10 g/L. → EC per (g/L) = dE_1% / 10
+  // 1% (1g/100mL)=10 g/L → EC per (g/L)=dE/10
   const aK  = dK_1p  / 10; // EC per (g/L)
   const aMg = dMg_1p / 10; // EC per (g/L)
 
-  // ✅ 기존 너 식 기반으로 "원소 K(g)"가 AB량(vAB)에 비례하도록 만든 부분만 유지
-  // K_element_g = RHO_AB*(0.0575*r - 0.0425) * (vAB/1000)
+  // 네 기존 K-비례식 유지 (vAB는 µL, vAB(mL)=vAB/1000)
   const kElem_g_per_uL_AB = Math.max(0, RHO_AB*(0.0575*r - 0.0425) / 1000);
-
-  // K2SO4 분말 g(용질) = K_element_g / K분율
   const k2so4_g_per_uL_AB = kElem_g_per_uL_AB / MASSFRAC_K_IN_K2SO4;
 
-  // Mg 자동 (r>1.5이면 K:Mg=4:1 등 목표비 적용; "원소 질량비"로 해석)
   const doMg = (r > 1.5);
   const mgElem_g_per_uL_AB = doMg ? (kElem_g_per_uL_AB / kMgRatio) : 0;
   const mgso4_g_per_uL_AB  = doMg ? (mgElem_g_per_uL_AB / MASSFRAC_MG_IN_MGSO4) : 0;
 
-  // 전체 모델: E*V = s*vAB + aK*(mK2so4) + aMg*(mMgso4)
-  // mK2so4 = k2so4_g_per_uL_AB * vAB, mMgso4 = mgso4_g_per_uL_AB * vAB
-  // => E*V = ( s + aK*k2so4_g_per_uL_AB + aMg*mgso4_g_per_uL_AB ) * vAB
-  const denom = s + aK*k2so4_g_per_uL_AB + aMg*mgso4_g_per_uL_AB;
+  // 총 모델:
+  // E = aAB*(mL_AB/L) + aK*(gK2SO4/L) + aMg*(gMgSO4/L)
+  // mL_AB/L = (vAB_mL)/V = (vAB_uL/1000)/V
+  // g/L = (g_per_uL_AB * vAB_uL)/V
+  //
+  // => E = ( aAB*(1/1000) + aK*k2so4_g_per_uL_AB + aMg*mgso4_g_per_uL_AB ) * (vAB_uL/V)
+  const denom = (aAB/1000) + aK*k2so4_g_per_uL_AB + aMg*mgso4_g_per_uL_AB;
   if(denom <= 0){ setHTML("result","계산 불가(분모 0)"); return; }
 
-  const vAB = (E*V) / denom;      // µL
-  const vA = vAB/2, vB = vAB/2;
+  const vAB_uL = (E * V) / denom;
+  const vA_uL = vAB_uL/2, vB_uL = vAB_uL/2;
 
-  const k2so4_g = k2so4_g_per_uL_AB * vAB;
-  const mgso4_g = mgso4_g_per_uL_AB * vAB;
+  const k2so4_g = k2so4_g_per_uL_AB * vAB_uL;
+  const mgso4_g = mgso4_g_per_uL_AB * vAB_uL;
 
-  setHTML("result", tableK(vA, vB, k2so4_g, mgso4_g));
+  setHTML("result", tableK(vA_uL, vB_uL, k2so4_g, mgso4_g));
   saveK();
 
   setText("debugBox",
 `r=tK/tN = ${r.toFixed(4)} (Mg auto: ${doMg})
-s=dAB/500 = ${s.toFixed(6)}
-aK=(K2SO4 1%)/10 = ${aK.toFixed(4)}  (EC per g/L)
-aMg=(MgSO4 1%)/10 = ${aMg.toFixed(4)} (EC per g/L)
+aAB=dE_AB(1mL each)/20 = ${aAB.toFixed(6)} (EC per mL/L)
+aK=dE_K(1%)/10 = ${aK.toFixed(4)} (EC per g/L)
+aMg=dE_Mg(1%)/10 = ${aMg.toFixed(4)} (EC per g/L)
 
-kElem_g_per_uL_AB = ${kElem_g_per_uL_AB.toExponential(6)}
 k2so4_g_per_uL_AB = ${k2so4_g_per_uL_AB.toExponential(6)}
 mgso4_g_per_uL_AB = ${mgso4_g_per_uL_AB.toExponential(6)}
 
-denom = ${denom.toFixed(6)}
-vAB = ${vAB.toFixed(2)} µL
+denom = ${denom.toExponential(6)}
+vAB = ${vAB_uL.toFixed(2)} µL (A+B 합)
 K2SO4 = ${k2so4_g.toFixed(4)} g
 MgSO4 = ${mgso4_g.toFixed(4)} g`);
 }
@@ -501,7 +502,7 @@ function recalc(){ isKMode()? calcK(): calcSimple(); }
 
 /* ===== 프리셋 잠금: 칼륨카드에서 용량만 가능 ===== */
 function lockByPreset(locked){
-  const ids = ["ECt","dE_AB_500","tK","tN","dE_K_1g_100mL","dE_Mg_1g_100mL","KMgRatio"];
+  const ids = ["ECt","dE_AB_1mLEach_100mL","tK","tN","dE_K_1g_100mL","dE_Mg_1g_100mL","KMgRatio"];
   ids.forEach(id=>{
     const el = $(id);
     if(!el) return;
@@ -567,8 +568,7 @@ function applyPreset(presetId){
   $("tK").value  = p.nk.toFixed(2);
   $("KMgRatio").value = "4.0";
 
-  // 기본값(1% 기준) 자동 세팅: CRC 표 기반
-  // K2SO4 1% = 11.2, MgSO4 1% = 7.6
+  // 기본값 (원하면 네 실측으로 바꾸면 됨)
   if(!Number.isFinite(getNum("dE_K_1g_100mL")))  $("dE_K_1g_100mL").value  = "11.2";
   if(!Number.isFinite(getNum("dE_Mg_1g_100mL"))) $("dE_Mg_1g_100mL").value = "7.6";
 
@@ -587,8 +587,8 @@ $("btnCalcS").addEventListener("click",calcSimple);
 $("btnCalc").addEventListener("click",calcK);
 
 // 저장
-["VbatchS","ECtS","dE_AB_500S"].forEach(id=> $(id).addEventListener("change",()=>{saveSimple()}));
-["Vbatch","ECt","dE_AB_500","tK","tN","dE_K_1g_100mL","dE_Mg_1g_100mL","KMgRatio"]
+["VbatchS","ECtS","dE_AB_1mLEach_100mLS"].forEach(id=> $(id).addEventListener("change",()=>{saveSimple()}));
+["Vbatch","ECt","dE_AB_1mLEach_100mL","tK","tN","dE_K_1g_100mL","dE_Mg_1g_100mL","KMgRatio"]
 .forEach(id=> $(id).addEventListener("change",()=>{saveK()}));
 
 // ✅ 모드 전환: 프리셋 있으면 양액만 금지
