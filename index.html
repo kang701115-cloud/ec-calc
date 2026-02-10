@@ -266,6 +266,7 @@ details > summary{
   <div class="footer"></div>
 </div>
 
+
 <script>
 "use strict";
 
@@ -430,23 +431,22 @@ function applyPreset(presetId){
   const p = PRESETS.find(x=>x.id===presetId);
   if(!p) return;
 
-  if(isKMode()){
-    // 칼륨 보충: EC + N:K(=> tN=1, tK=nk)
-    if($("ECt")) $("ECt").value = p.ec.toFixed(2);
-    if($("tN"))  $("tN").value  = "1";
-    if($("tK"))  $("tK").value  = p.nk.toFixed(2);
-    saveK();
-  }else{
-    // 양액만: EC만
-    if($("ECtS")) $("ECtS").value = p.ec.toFixed(2);
-    saveSimple();
+  // ✅ 프리셋 적용 시 무조건 칼륨 보충 모드로 전환
+  if(!isKMode()){
+    applyModeUI(true); // cardK 보이게 + 토글 상태/저장까지 같이 처리
   }
+
+  // ✅ 칼륨 보충 입력값 채우기 (EC + N:K => tN=1, tK=nk)
+  if($("ECt")) $("ECt").value = p.ec.toFixed(2);
+  if($("tN"))  $("tN").value  = "1";
+  if($("tK"))  $("tK").value  = p.nk.toFixed(2);
+  saveK();
 
   localStorage.setItem(KEY_PRESET, presetId);
   $("presetNow").textContent = presetLabel(p);
 
   closePreset();
-  recalc();
+  recalc(); // 칼륨 보충 모드로 계산
 }
 
 function renderPresetList(){
@@ -500,3 +500,4 @@ $("presetModal").addEventListener("click", (e)=>{ if(e.target === $("presetModal
 </script>
 </body>
 </html>
+
