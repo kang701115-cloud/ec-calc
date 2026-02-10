@@ -341,6 +341,7 @@ const PRESETS = [
 /* ===== 상태 ===== */
 function isKMode(){ return !!JSON.parse(localStorage.getItem(KEY_MODE)||"false"); }
 function isUnitML(){ return !!JSON.parse(localStorage.getItem(KEY_UNIT)||"false"); }
+function hasPreset(){ return !!localStorage.getItem(KEY_PRESET); }
 
 /* ===== UI 적용 ===== */
 function applyModeUI(isK){
@@ -542,8 +543,27 @@ $("btnCalc").addEventListener("click",calcK);
 ["Vbatch","ECt","dE_AB_500","dE_K_250","rhoK","tK","tN"]
 .forEach(id=> $(id).addEventListener("change",()=>{saveK()}));
 
-$("modeSwitch").addEventListener("change",e=>{applyModeUI(e.target.checked);recalc();});
-$("chipSimple").addEventListener("click",()=>{applyModeUI(false);recalc();});
+$("modeSwitch").addEventListener("change", e=>{
+  // 프리셋 선택 상태면 양액만으로 못감
+  if(hasPreset() && !e.target.checked){
+    e.target.checked = true;      // 스위치 되돌림
+    applyModeUI(true);            // K모드 유지
+    return;
+  }
+  applyModeUI(e.target.checked);
+  recalc();
+});
+
+$("chipSimple").addEventListener("click", ()=>{
+  if(hasPreset()){
+    // 프리셋 선택 상태면 무시 (양액만 금지)
+    applyModeUI(true);
+    return;
+  }
+  applyModeUI(false);
+  recalc();
+});
+
 $("chipK").addEventListener("click",()=>{applyModeUI(true);recalc();});
 
 $("unitSwitch").addEventListener("change",e=>{applyUnitUI(e.target.checked);recalc();});
@@ -566,4 +586,5 @@ $("btnPresetClear").addEventListener("click", ()=>{ clearPreset(); });
 </script>
 </body>
 </html>
+
 
