@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액 계산기</title>
+<title>양액 배합 계산기</title>
 
 <!-- PWA -->
 <link rel="manifest" href="./manifest.json">
@@ -20,73 +20,64 @@ h1{color:var(--brand); font-size:2.1rem; margin:0 0 12px}
 
 .card{ background:#fff; padding:20px; margin:16px auto; border-radius:14px;
 box-shadow:0 6px 16px rgba(0,0,0,.06); text-align:left; font-size:1.06rem;}
-
 .card h2{margin:0 0 10px; font-size:1.22rem; color:#222}
+
 label{display:block; margin-top:12px; font-weight:700}
 .row{display:flex; gap:12px; flex-wrap:wrap}
 .row > div{flex:1 1 220px}
-input{ width:100%; padding:12px; margin-top:6px; border:1px solid #d7d7d7; border-radius:10px; font-size:1.05rem; background:#fff; }
-.btn{ margin-top:16px; padding:13px 16px; width:100%; background:var(--brand); color:#fff; border:none; border-radius:10px; cursor:pointer; font-size:1.08rem; }
+
+input{
+  width:100%; padding:12px; margin-top:6px;
+  border:1px solid #d7d7d7; border-radius:10px;
+  font-size:1.05rem; background:#fff;
+}
+
+.btn{
+  margin-top:16px; padding:13px 16px; width:100%;
+  background:var(--brand); color:#fff; border:none; border-radius:10px;
+  cursor:pointer; font-size:1.08rem;
+}
 .btn:hover{background:var(--brand-dark)}
 .result{margin-top:14px; font-weight:700; color:#222; font-size:1.06rem}
 .meta{font-size:.96rem; color:#333; white-space:pre-line; margin-top:10px}
 .footer{font-size:.9rem; color:#666; margin-top:16px}
+.hidden{display:none}
 
-/* Toggle positioning: 제목 아래 오른쪽 정렬 */
+/* Toggle positioning */
 .control-wrap{
-  display:flex;
-  justify-content:flex-end;
-  align-items:center;
-  gap:8px;
-  margin: 0 auto 8px;
-  max-width: var(--card-w);
-  padding-right:10px;
+  display:flex; justify-content:flex-end; align-items:center; gap:8px;
+  margin: 0 auto 8px; max-width: var(--card-w); padding-right:10px;
 }
 
-/* 프리셋 버튼 줄: 토글 아래 */
+/* Preset row */
 .preset-wrap{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  margin: 0 auto 12px;
-  max-width: var(--card-w);
-  padding: 0 10px;
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  margin: 0 auto 12px; max-width: var(--card-w); padding: 0 10px;
 }
 .preset-left{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
 .preset-btn{
-  background:#fff;
-  border:1px solid #e7e7e7;
-  border-radius:999px;
-  padding:10px 12px;
-  cursor:pointer;
+  background:#fff; border:1px solid #e7e7e7; border-radius:999px;
+  padding:10px 12px; cursor:pointer;
   box-shadow:0 4px 10px rgba(0,0,0,.06);
-  font-weight:700;
-  color:#274690;
+  font-weight:700; color:#274690;
 }
 .preset-btn:hover{ background:#f5f8ff }
 .preset-pill{
-  font-size:.88rem;
-  color:#274690;
-  background:#eef6ff;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid #d9e2ff;
+  font-size:.88rem; color:#274690; background:#eef6ff;
+  padding:6px 10px; border-radius:999px; border:1px solid #d9e2ff;
 }
 
-/* mini toggle box */
+/* Toggle box */
 .float-box{
   display:flex; align-items:center; gap:8px;
   background:#ffffffd9; backdrop-filter:saturate(180%) blur(6px);
   border:1px solid #e7e7e7; border-radius:999px; padding:6px 10px;
   box-shadow:0 4px 10px rgba(0,0,0,.06);
 }
-
-/* labels */
 .mode-chip{font-weight:700; color:#274690; background:#eef6ff; padding:4px 8px; border-radius:999px; font-size:.86rem}
 .mode-chip.inactive{opacity:.55}
 
-/* small switch */
+/* Small switch */
 .switch{position:relative; display:inline-block; width:32px; height:16px}
 .switch input{opacity:0; width:0; height:0}
 .slider{ position:absolute; cursor:pointer; inset:0; background:#cfe2ff; transition:.2s; border-radius:999px}
@@ -96,43 +87,42 @@ input{ width:100%; padding:12px; margin-top:6px; border:1px solid #d7d7d7; borde
 input:checked + .slider{background:#bcd0ff}
 input:checked + .slider:before{transform:translateX(16px)}
 
+/* Table */
 table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:1.0rem}
 th, td{ border:1px solid #eee; padding:10px 8px; text-align:right }
 th{ background:#f3f6ff; color:#123}
 td:first-child, th:first-child{ text-align:left }
+td:last-child, th:last-child{ text-align:left }
 
+/* Details */
 details{margin-top:10px}
 details > summary{
   cursor:pointer; user-select:none; padding:8px 10px;
   background:#f0f4ff; border:1px solid #d9e2ff;
   border-radius:10px; color:#274690; font-weight:700}
 .details-body{padding:10px 2px; font-size:.98rem; color:#333; white-space:pre-line}
-.hidden{display:none}
 
-/* ✅ 프리셋 모달 */
+/* Modal */
 .modal{
   position:fixed; inset:0;
   background:rgba(0,0,0,.35);
   display:none;
-  align-items:center;
-  justify-content:center;
-  padding:18px;
-  z-index:999;
+  align-items:center; justify-content:center;
+  padding:18px; z-index:999;
 }
 .modal.open{ display:flex; }
 .modal-card{
-  width:min(520px, 100%);
-  background:#fff;
-  border-radius:16px;
+  width:min(560px, 100%);
+  background:#fff; border-radius:16px;
   box-shadow:0 10px 30px rgba(0,0,0,.18);
-  padding:14px;
-  text-align:left;
+  padding:14px; text-align:left;
 }
 .modal-head{
   display:flex; align-items:center; justify-content:space-between;
-  padding:6px 6px 10px;
+  padding:6px 6px 10px; gap:10px; flex-wrap:wrap;
 }
 .modal-title{ font-weight:800; color:#123; font-size:1.08rem; }
+.modal-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .modal-x{
   border:none; background:#f2f4f8; border-radius:10px;
   padding:8px 10px; cursor:pointer; font-weight:800;
@@ -149,7 +139,7 @@ details > summary{
 .preset-name{ font-weight:900; color:#274690; margin-bottom:6px; }
 .preset-sub{ font-size:.95rem; color:#333; white-space:pre-line; }
 
-/* ✅ 프리셋 잠금 상태(회색 + 입력 막기) */
+/* Preset lock gray + block input */
 .locked input{
   background:#f1f3f8 !important;
   color:#555 !important;
@@ -157,7 +147,7 @@ details > summary{
   pointer-events:none;
 }
 
-/* 모바일 대응 */
+/* Mobile */
 @media (max-width:480px){
   body{padding:14px}
   table{font-size:0.92rem}
@@ -191,12 +181,15 @@ details > summary{
   <button class="preset-btn" id="btnPresetClear" title="프리셋 잠금 해제">프리셋 해제</button>
 </div>
 
-<!-- 프리셋 모달 -->
+<!-- Preset Modal -->
 <div class="modal" id="presetModal" aria-hidden="true">
   <div class="modal-card" role="dialog" aria-modal="true" aria-label="프리셋 선택">
     <div class="modal-head">
       <div class="modal-title">프리셋 선택 (설향 NFT)</div>
-      <button class="modal-x" id="presetClose">닫기</button>
+      <div class="modal-actions">
+        <button class="preset-btn" id="btnPresetClearInModal">프리셋 해제</button>
+        <button class="modal-x" id="presetClose">닫기</button>
+      </div>
     </div>
     <div class="preset-list" id="presetList"></div>
   </div>
@@ -228,9 +221,10 @@ details > summary{
     <div class="meta" id="metaS"></div>
   </div>
 
-  <!-- 칼륨 보충 -->
+  <!-- 칼륨 보충 + Mg 자동 -->
   <div class="card hidden" id="cardK">
-    <h2>칼륨 보충</h2>
+    <h2>칼륨 보충 + Mg 자동 보강</h2>
+
     <div class="row">
       <div>
         <label for="Vbatch">배합 용량 (L)</label>
@@ -248,23 +242,38 @@ details > summary{
         <input type="number" id="dE_AB_500" step="0.01" min="0" placeholder="예: 0.80">
       </div>
       <div>
-        <label for="dE_K_250">10% K₂SO₄ 250 µL → EC 증가 (mS/cm)</label>
-        <input type="number" id="dE_K_250" step="0.01" min="0" placeholder="예: 0.05">
+        <label for="dE_K_250">10% K₂SO₄ 용액 250 µL → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_K_250" step="0.001" min="0" placeholder="예: 0.050">
       </div>
     </div>
 
     <div class="row">
       <div>
-        <label for="rhoK">10% K₂SO₄ 밀도 (g/mL)</label>
+        <label for="rhoK">10% K₂SO₄ 용액 밀도 (g/mL)</label>
         <input type="number" id="rhoK" step="0.001" min="0" value="1.00">
       </div>
       <div>
         <label for="tK">목표 K</label>
-        <input type="number" id="tK" step="0.01" min="0.0001" placeholder="예: 1.2">
+        <input type="number" id="tK" step="0.01" min="0.0001" placeholder="예: 1.9">
       </div>
       <div>
         <label for="tN">목표 N</label>
         <input type="number" id="tN" step="0.01" min="0.0001" placeholder="예: 1">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="dE_Mg_250">10% MgSO₄ 용액 250 µL → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_Mg_250" step="0.001" min="0">
+      </div>
+      <div>
+        <label for="rhoMg">10% MgSO₄ 용액 밀도 (g/mL)</label>
+        <input type="number" id="rhoMg" step="0.001" min="0" value="1.00">
+      </div>
+      <div>
+        <label for="KMgRatio">K:Mg 목표비 (질량비)</label>
+        <input type="number" id="KMgRatio" step="0.1" min="0.1" value="4.0">
       </div>
     </div>
 
@@ -295,7 +304,6 @@ details > summary{
     try{
       const reg = await navigator.serviceWorker.register("./service-worker.js", { scope: "./" });
       if(el) el.textContent = "PWA: 서비스워커 등록됨";
-      // 새 버전 바로 적용
       reg.addEventListener("updatefound", ()=>{
         if(el) el.textContent = "PWA: 업데이트 감지(새로고침하면 적용)";
       });
@@ -307,10 +315,22 @@ details > summary{
 
 /* ===== 상수 ===== */
 const RHO_AB = 1.21;
-const ATOMIC = { K:39.0983, S:32.065, O:15.999 };
+
+// 원자량(코드 내 계산용)
+const ATOMIC = { K:39.0983, Mg:24.305, S:32.065, O:15.999 };
+
+// K2SO4
 const M_K2SO4 = 2*ATOMIC.K + ATOMIC.S + 4*ATOMIC.O;
-const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4;
-const F_K = 0.10 * MASSFRAC_K_IN_K2SO4;
+const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4; // K 질량분율
+const F_K_ELEM_PER_G_SOLUTION = 0.10 * MASSFRAC_K_IN_K2SO4; // (용액 g)당 K g
+
+// MgSO4 (anhydrous 기준: Mg 질량분율≈20.2%)
+const M_MgSO4 = ATOMIC.Mg + ATOMIC.S + 4*ATOMIC.O;
+const MASSFRAC_MG_IN_MGSO4 = ATOMIC.Mg / M_MgSO4;
+const F_Mg_ELEM_PER_G_SOLUTION = 0.10 * MASSFRAC_MG_IN_MgSO4; // (용액 g)당 Mg g
+
+// ✅ 기본 Mg 용액 EC증분(가정: 10% MgSO4 용액 전도도 ~41.4 mS/cm, 0.5L에 250uL → 약 0.0207)
+const DEFAULT_DE_MG_250 = 0.0207;
 
 /* ===== 유틸 ===== */
 const $ = id => document.getElementById(id);
@@ -320,11 +340,11 @@ const setHTML = (id,html)=>$(id).innerHTML=html;
 const setText = (id,txt)=>$(id).textContent=txt;
 
 /* ===== localStorage KEY ===== */
-const KEY_SIMPLE="nutri_calc_simple_v2";
-const KEY_KMODE ="nutri_calc_kmode_v2";
-const KEY_MODE ="nutri_calc_mode_v2";
-const KEY_UNIT ="nutri_calc_unit_v2";
-const KEY_PRESET="nutri_calc_preset_v1";
+const KEY_SIMPLE="nutri_calc_simple_v3";
+const KEY_KMODE ="nutri_calc_kmode_v3";
+const KEY_MODE ="nutri_calc_mode_v3";
+const KEY_UNIT ="nutri_calc_unit_v3";
+const KEY_PRESET="nutri_calc_preset_v2";
 
 /* ===== 프리셋(사진 기반: 4단계) ===== */
 const PRESETS = [
@@ -339,9 +359,9 @@ const PRESETS = [
 ];
 
 /* ===== 상태 ===== */
+function hasPreset(){ return !!localStorage.getItem(KEY_PRESET); }
 function isKMode(){ return !!JSON.parse(localStorage.getItem(KEY_MODE)||"false"); }
 function isUnitML(){ return !!JSON.parse(localStorage.getItem(KEY_UNIT)||"false"); }
-function hasPreset(){ return !!localStorage.getItem(KEY_PRESET); }
 
 /* ===== UI 적용 ===== */
 function applyModeUI(isK){
@@ -373,45 +393,40 @@ function loadK(){
   for(const k in d) if($(k)) $(k).value=d[k];
 }
 function saveK(){
-  const d={ Vbatch:getNum("Vbatch"),ECt:getNum("ECt"),
-    dE_AB_500:getNum("dE_AB_500"),dE_K_250:getNum("dE_K_250"),
-    rhoK:getNum("rhoK"),tK:getNum("tK"),tN:getNum("tN") };
+  const d={
+    Vbatch:getNum("Vbatch"), ECt:getNum("ECt"),
+    dE_AB_500:getNum("dE_AB_500"), dE_K_250:getNum("dE_K_250"),
+    rhoK:getNum("rhoK"), tK:getNum("tK"), tN:getNum("tN"),
+    dE_Mg_250:getNum("dE_Mg_250"), rhoMg:getNum("rhoMg"), KMgRatio:getNum("KMgRatio")
+  };
   localStorage.setItem(KEY_KMODE,JSON.stringify(d));
 }
 
-/* ===== 단위 처리 ===== */
+/* ===== 단위 처리(AB 주입량 표시용) ===== */
 function unitName(){ return isUnitML()? "mL":"µL"; }
 function toUnit(v_uL){ return isUnitML()? round1(v_uL/1000): Number(v_uL.toFixed(1)); }
-function cell(v){ return toUnit(v).toFixed(1); }
+function cellVol(v_uL){ return toUnit(v_uL).toFixed(1); }
 
-/* ===== 표 렌더 ===== */
-function tableSimple(vA,vB){
+/* ===== 결과 표 ===== */
+function tableK(vA_uL, vB_uL, k2so4_g, mgso4_g){
   const u=unitName();
+  const mgRow = (mgso4_g>0)
+    ? `<tr><td>MgSO₄ (용질)</td><td>${mgso4_g.toFixed(3)}</td><td>g</td></tr>`
+    : `<tr><td>MgSO₄ (용질)</td><td>0.000</td><td>g</td></tr>`;
+
   return `
   <table>
-    <thead><tr><th>항목</th><th>주입량 (${u})</th></tr></thead>
+    <thead><tr><th>항목</th><th>주입량</th><th>단위</th></tr></thead>
     <tbody>
-      <tr><td>A액</td><td>${cell(vA)}</td></tr>
-      <tr><td>B액</td><td>${cell(vB)}</td></tr>
-      <tr><td><b>합계(AB)</b></td><td><b>${cell(vA+vB)}</b></td></tr>
-    </tbody>
-  </table>`;
-}
-function tableK(vA,vB,vK){
-  const u=unitName();
-  return `
-  <table>
-    <thead><tr><th>항목</th><th>주입량 (${u})</th></tr></thead>
-    <tbody>
-      <tr><td>A액</td><td>${cell(vA)}</td></tr>
-      <tr><td>B액</td><td>${cell(vB)}</td></tr>
-      <tr><td>10% K₂SO₄</td><td>${cell(Math.max(0,vK))}</td></tr>
-      <tr><td><b>합계</b></td><td><b>${cell(vA+vB+Math.max(0,vK))}</b></td></tr>
+      <tr><td>A액</td><td>${cellVol(vA_uL)}</td><td>${u}</td></tr>
+      <tr><td>B액</td><td>${cellVol(vB_uL)}</td><td>${u}</td></tr>
+      <tr><td>K₂SO₄ (용질)</td><td>${k2so4_g.toFixed(3)}</td><td>g</td></tr>
+      ${mgRow}
     </tbody>
   </table>`;
 }
 
-/* ===== 계산 ===== */
+/* ===== 계산(양액만) ===== */
 function calcSimple(){
   const V=getNum("VbatchS"),E=getNum("ECtS"),d=getNum("dE_AB_500S");
   setHTML("resultS",""); setText("metaS","");
@@ -419,49 +434,121 @@ function calcSimple(){
   if(V===0){ setHTML("resultS","부피 0 불가");return; }
   const s=d/500, vAB=(E/s)*V;
   const vA=vAB/2,vB=vAB/2;
-  setHTML("resultS",tableSimple(vA,vB));
+  setHTML("resultS",`
+    <table>
+      <thead><tr><th>항목</th><th>주입량</th><th>단위</th></tr></thead>
+      <tbody>
+        <tr><td>A액</td><td>${cellVol(vA)}</td><td>${unitName()}</td></tr>
+        <tr><td>B액</td><td>${cellVol(vB)}</td><td>${unitName()}</td></tr>
+      </tbody>
+    </table>
+  `);
   saveSimple();
 }
 
+/* ===== 계산(칼륨+Mg 자동) ===== */
 function calcK(){
-  const V=getNum("Vbatch"),E=getNum("ECt"),d1=getNum("dE_AB_500"),
-        d2=getNum("dE_K_250"),rho=getNum("rhoK"),tk=getNum("tK"),tn=getNum("tN");
+  const V=getNum("Vbatch"),E=getNum("ECt"),
+        dAB=getNum("dE_AB_500"),
+        dK=getNum("dE_K_250"),
+        rhoK=getNum("rhoK"),
+        tk=getNum("tK"),
+        tn=getNum("tN"),
+        dMg=getNum("dE_Mg_250"),
+        rhoMg=getNum("rhoMg"),
+        kMgRatio=getNum("KMgRatio");
+
   setHTML("result",""); setText("meta",""); setText("debugBox","");
-  if([V,E,d1,d2,rho,tk,tn].some(x=>!Number.isFinite(x)||x<0)){ setHTML("result","입력 확인");return; }
+
+  if([V,E,dAB,dK,rhoK,tk,tn,dMg,rhoMg,kMgRatio].some(x=>!Number.isFinite(x)||x<0)){
+    setHTML("result","입력 확인");return;
+  }
   if(V===0){ setHTML("result","부피 0 불가");return; }
   if(tn<=0){ setHTML("result","tN 0 불가");return; }
+  if(kMgRatio<=0){ setHTML("result","K:Mg 비율 0 불가");return; }
 
-  const r=tk/tn;
-  const s=d1/500, g=d2/250;
-  const c=Math.max(0,(RHO_AB*(0.0575*r-0.0425))/(F_K*rho));
+  const r = tk/tn;
 
-  const vAB=(E/(s+g*c))*V;
-  const vK=c*vAB;
+  // EC 기여 계수(ΔEC per µL of stock into 기준물)
+  const s = dAB/500;   // AB 합 500µL 기준
+  const g = dK/250;    // K stock 250µL 기준
+  const m = dMg/250;   // Mg stock 250µL 기준
 
-  const vA=vAB/2,vB=vAB/2;
-  setHTML("result",tableK(vA,vB,vK));
+  // 기존 K 보정식(네가 쓰던 식 유지)
+  // c는 vK(µL) = c * vAB(µL) 형태로 동작하게 만드는 계수
+  const cK = Math.max(0,(RHO_AB*(0.0575*r-0.0425))/((0.10*MASSFRAC_K_IN_K2SO4)*rhoK));
+
+  // ✅ Mg 자동: r>1.5이면 K:Mg(질량비) 목표 맞추도록 Mg 용액 비율을 K에서 파생
+  // K 질량(원소K) = vK(mL)*rhoK*0.10*MASSFRAC_K
+  // Mg 질량(원소Mg)= vMg(mL)*rhoMg*0.10*MASSFRAC_Mg
+  // 목표: K/Mg = kMgRatio → Mg = K / kMgRatio
+  //
+  // vMg = vK * (rhoK*0.10*MASSFRAC_K) / (kMgRatio * rhoMg*0.10*MASSFRAC_Mg)
+  //     = vK * (rhoK*MASSFRAC_K) / (kMgRatio * rhoMg*MASSFRAC_Mg)
+  //
+  // vK = cK * vAB 이므로 vMg = cMg * vAB (cMg = cK * ... )
+  let cMg = 0;
+  const doMg = (r > 1.5);
+
+  if(doMg){
+    cMg = cK * (rhoK*MASSFRAC_K_IN_K2SO4) / (kMgRatio * rhoMg * MASSFRAC_MG_IN_MgSO4);
+  }
+
+  // 총 EC = (s*vAB + g*(cK*vAB) + m*(cMg*vAB)) / V?  (기존 코드 구조상 vAB가 이미 µL 단위로 들어감)
+  // 기존 네 구조: vAB = (E / (s + g*c)) * V 형태였으니, Mg도 같은 방식으로 더해줌.
+  const denom = (s + g*cK + m*cMg);
+  if(denom <= 0){
+    setHTML("result","계산 불가(분모 0)"); return;
+  }
+
+  const vAB = (E/denom) * V; // µL
+  const vA  = vAB/2;
+  const vB  = vAB/2;
+  const vK_uL  = cK * vAB;
+  const vMg_uL = cMg * vAB;
+
+  // ✅ K2SO4, MgSO4 용질 g로 변환
+  // 용액질량(g) = v(mL)*rho
+  // 용질(g) = 용액질량 * 0.10
+  const vK_mL  = vK_uL/1000;
+  const vMg_mL = vMg_uL/1000;
+
+  const k2so4_solute_g = (vK_mL * rhoK) * 0.10;
+  const mgso4_solute_g = doMg ? ((vMg_mL * rhoMg) * 0.10) : 0;
+
+  setHTML("result", tableK(vA, vB, k2so4_solute_g, mgso4_solute_g));
   saveK();
 
+  // 디버그
   setText("debugBox",
 `r = tK/tN = ${r.toFixed(4)}
+doMg = ${doMg}
 s = dE_AB_500/500 = ${s.toFixed(6)}
-g = dE_K_250/250 = ${g.toFixed(6)}
-c = ${c.toFixed(6)}
+g = dE_K_250/250  = ${g.toFixed(6)}
+m = dE_Mg_250/250 = ${m.toFixed(6)}
+cK = ${cK.toFixed(6)}
+cMg = ${cMg.toFixed(6)}
+denom = ${denom.toFixed(6)}
+
 vAB = ${vAB.toFixed(2)} µL (A+B 합)
-vK  = ${vK.toFixed(2)} µL`);
+vK  = ${vK_uL.toFixed(2)} µL (10% K2SO4 용액)
+vMg = ${vMg_uL.toFixed(2)} µL (10% MgSO4 용액)
+
+K2SO4 용질 = ${k2so4_solute_g.toFixed(4)} g
+MgSO4 용질 = ${mgso4_solute_g.toFixed(4)} g`);
 }
 
 function recalc(){ isKMode()? calcK(): calcSimple(); }
 
-/* ===== 프리셋 잠금 ===== */
+/* ===== 프리셋 잠금: "용량만" 가능하게 ===== */
 function lockByPreset(locked){
-  const ids = ["ECt","dE_AB_500","dE_K_250","rhoK","tK","tN"]; // ✅ 전부 잠금
+  // ✅ 칼륨 보충 카드에서 용량(Vbatch) 제외 전부 잠금
+  const ids = ["ECt","dE_AB_500","dE_K_250","rhoK","tK","tN","dE_Mg_250","rhoMg","KMgRatio"];
 
   ids.forEach(id=>{
     const el = $(id);
     if(!el) return;
-
-    const box = el.parentElement; // row > div
+    const box = el.parentElement;
     if(locked){
       el.setAttribute("readonly","true");
       el.setAttribute("tabindex","-1");
@@ -505,6 +592,11 @@ function loadPresetUI(){
   const p = PRESETS.find(x=>x.id===id) || null;
   $("presetNow").textContent = presetLabel(p);
   lockByPreset(!!id);
+
+  // 프리셋이 있으면 무조건 K모드 유지
+  if(!!id && !isKMode()){
+    applyModeUI(true);
+  }
 }
 
 function clearPreset(){
@@ -513,7 +605,7 @@ function clearPreset(){
   lockByPreset(false);
 }
 
-/* ✅ 프리셋 적용: 자동으로 칼륨 보충 모드 전환 + 값 주입 + 잠금 */
+/* ✅ 프리셋 적용: 자동 K모드 전환 + 값 주입 + 잠금 */
 function applyPreset(presetId){
   const p = PRESETS.find(x=>x.id===presetId);
   if(!p) return;
@@ -521,10 +613,16 @@ function applyPreset(presetId){
   // 무조건 칼륨 보충 모드로 이동
   if(!isKMode()) applyModeUI(true);
 
-  // 칼륨 보충 값 채우기: EC + N:K(=1:x => tN=1, tK=x)
+  // 프리셋 값 주입 (EC + N:K => tN=1, tK=nk)
   $("ECt").value = p.ec.toFixed(2);
   $("tN").value  = "1";
   $("tK").value  = p.nk.toFixed(2);
+
+  // Mg 기본값 세팅(없으면)
+  if(!Number.isFinite(getNum("dE_Mg_250"))){
+    $("dE_Mg_250").value = DEFAULT_DE_MG_250.toFixed(3);
+  }
+
   saveK();
 
   localStorage.setItem(KEY_PRESET, presetId);
@@ -539,32 +637,33 @@ function applyPreset(presetId){
 $("btnCalcS").addEventListener("click",calcSimple);
 $("btnCalc").addEventListener("click",calcK);
 
+// 값 변경 저장
 ["VbatchS","ECtS","dE_AB_500S"].forEach(id=> $(id).addEventListener("change",()=>{saveSimple()}));
-["Vbatch","ECt","dE_AB_500","dE_K_250","rhoK","tK","tN"]
+["Vbatch","ECt","dE_AB_500","dE_K_250","rhoK","tK","tN","dE_Mg_250","rhoMg","KMgRatio"]
 .forEach(id=> $(id).addEventListener("change",()=>{saveK()}));
 
+// ✅ 모드 전환: 프리셋 있으면 양액만 금지
 $("modeSwitch").addEventListener("change", e=>{
-  // 프리셋 선택 상태면 양액만으로 못감
   if(hasPreset() && !e.target.checked){
-    e.target.checked = true;      // 스위치 되돌림
-    applyModeUI(true);            // K모드 유지
+    e.target.checked = true;
+    applyModeUI(true);
     return;
   }
   applyModeUI(e.target.checked);
   recalc();
 });
-
 $("chipSimple").addEventListener("click", ()=>{
   if(hasPreset()){
-    // 프리셋 선택 상태면 무시 (양액만 금지)
     applyModeUI(true);
     return;
   }
   applyModeUI(false);
   recalc();
 });
-
-$("chipK").addEventListener("click",()=>{applyModeUI(true);recalc();});
+$("chipK").addEventListener("click", ()=>{
+  applyModeUI(true);
+  recalc();
+});
 
 $("unitSwitch").addEventListener("change",e=>{applyUnitUI(e.target.checked);recalc();});
 
@@ -573,19 +672,31 @@ $("presetClose").addEventListener("click", closePreset);
 $("presetModal").addEventListener("click", (e)=>{ if(e.target === $("presetModal")) closePreset(); });
 
 $("btnPresetClear").addEventListener("click", ()=>{ clearPreset(); });
+$("btnPresetClearInModal").addEventListener("click", ()=>{ clearPreset(); closePreset(); });
 
 /* ===== 초기 로드 ===== */
 (function(){
   applyModeUI(isKMode());
   applyUnitUI(isUnitML());
+
+  // Mg 증분 기본값 채워두기(최초 1회 편의)
+  if($("dE_Mg_250") && !localStorage.getItem(KEY_KMODE)){
+    $("dE_Mg_250").value = DEFAULT_DE_MG_250.toFixed(3);
+  }
+
   loadSimple();
   loadK();
+
   renderPresetList();
   loadPresetUI();
+
+  // 프리셋 있으면 K모드 고정 + 바로 계산 시도
+  if(hasPreset()){
+    applyModeUI(true);
+    lockByPreset(true);
+    recalc();
+  }
 })();
 </script>
 </body>
 </html>
-
-
-
