@@ -220,7 +220,7 @@ details > summary{
     <div class="meta" id="metaS"></div>
   </div>
 
-  <!-- 칼륨+Mg 자동 (K/Mg/AB 모두 10wt% 용액 기준 출력) -->
+  <!-- 칼륨+Mg 자동 -->
   <div class="card hidden" id="cardK">
     <h2>칼륨+Mg / N:K&gt;1:1.5면 Mg 자동 (K:Mg=4:1)</h2>
 
@@ -281,33 +281,10 @@ details > summary{
 <script>
 "use strict";
 
-/* ===== PWA: Service Worker 등록 ===== */
-(function registerSW(){
-  const el = document.getElementById("swStatus");
-  if(!("serviceWorker" in navigator)){
-    if(el) el.textContent = "PWA: 이 브라우저는 Service Worker 미지원";
-    return;
-  }
-  window.addEventListener("load", async ()=>{
-    try{
-      const reg = await navigator.serviceWorker.register("./service-worker.js", { scope: "./" });
-      if(el) el.textContent = "PWA: 서비스워커 등록됨";
-      reg.addEventListener("updatefound", ()=>{ if(el) el.textContent = "PWA: 업데이트 감지(새로고침하면 적용)"; });
-    }catch(e){
-      if(el) el.textContent = "PWA: 서비스워커 등록 실패(경로/서버 확인)";
-    }
-  });
-})();
-
 /* ===== 상수 ===== */
-/* AB 용액 밀도(네가 쓰던 값 유지). 단위: g/mL */
-const RHO_AB = 1.21;
-
-/* 10wt% 용액에서, 용액 1 g 중 용질 g = 0.10 */
-const SOLUTE_MASSFRAC_IN_10WT = 0.10;
-
-/* 10wt% 용액 밀도는 단순화로 1.00 g/mL 가정 (필요하면 바꿔) */
-const RHO_STOCK_DEFAULT = 1.00;
+const RHO_AB = 1.21;                 // g/mL (네가 쓰던 값 유지)
+const SOLUTE_MASSFRAC_IN_10WT = 0.10; // 10wt% 용액
+const RHO_STOCK_DEFAULT = 1.00;       // 10wt% 용액 밀도 가정 (원하면 바꿔)
 
 const ATOMIC = { K:39.0983, Mg:24.305, S:32.065, O:15.999, H:1.008 };
 
@@ -320,19 +297,12 @@ const M_H2O = 2*ATOMIC.H + ATOMIC.O;
 const M_MGSO4_7H2O = (ATOMIC.Mg + ATOMIC.S + 4*ATOMIC.O) + 7*M_H2O;
 const MASSFRAC_MG_IN_MGSO4_7H2O = ATOMIC.Mg / M_MGSO4_7H2O;
 
-/* ===== 유틸 ===== */
-const $ = id => document.getElementById(id);
-const getNum = id => { const v=parseFloat($(id).value); return Number.isFinite(v)?v:NaN; };
-const round1 = x => Math.round(x*10)/10;
-const setHTML = (id,html)=>$(id).innerHTML=html;
-const setText = (id,txt)=>$(id).textContent=txt;
-
 /* ===== localStorage KEY ===== */
-const KEY_SIMPLE="nutri_calc_simple_v9";
-const KEY_KMODE ="nutri_calc_kmode_v9";
-const KEY_MODE ="nutri_calc_mode_v9";
-const KEY_UNIT ="nutri_calc_unit_v9";
-const KEY_PRESET="nutri_calc_preset_v9";
+const KEY_SIMPLE="nutri_calc_simple_v10";
+const KEY_KMODE ="nutri_calc_kmode_v10";
+const KEY_MODE ="nutri_calc_mode_v10";
+const KEY_UNIT ="nutri_calc_unit_v10";
+const KEY_PRESET="nutri_calc_preset_v10";
 
 /* ===== 프리셋 ===== */
 const PRESETS = [
@@ -345,6 +315,30 @@ const PRESETS = [
   { id:"bulk", name:"비대기", ec:(1.3+1.45)/2, nk:(1.8+2.0)/2,
     note:"목적: 크기·당도\nEC 1.3~1.45 → 1.38\nN:K 1:1.8~2 → 1:1.9" },
 ];
+
+/* ===== DOM 유틸(에러 시 화면에 표시) ===== */
+function $(id){
+  const el = document.getElementById(id);
+  if(!el) throw new Error(`DOM 요소 없음: #${id}`);
+  return el;
+}
+const getNum = id => {
+  const v = parseFloat($(id).value);
+  return Number.isFinite(v) ? v : NaN;
+};
+const round1 = x => Math.round(x*10)/10;
+const setHTML = (id,html)=>{ $(id).innerHTML = html; };
+const setText = (id,txt)=>{ $(id).textContent = txt; };
+
+function showFatal(err){
+  const el = document.getElementById("swStatus");
+  if(el){
+    el.style.color = "#b00020";
+    el.style.whiteSpace = "pre-line";
+    el.textContent = "오류로 인해 스크립트가 중단됨:\n" + String(err && err.message ? err.message : err);
+  }
+  console.error(err);
+}
 
 /* ===== 상태 ===== */
 function hasPreset(){ return !!localStorage.getItem(KEY_PRESET); }
@@ -370,7 +364,7 @@ function applyUnitUI(isML){
 /* ===== 저장/로드 ===== */
 function loadSimple(){
   const d=JSON.parse(localStorage.getItem(KEY_SIMPLE)||"null"); if(!d) return;
-  for(const k in d) if($(k)) $(k).value=d[k];
+  for(const k in d) if(document.getElementById(k)) document.getElementById(k).value=d[k];
 }
 function saveSimple(){
   const d={ VbatchS:getNum("VbatchS"), ECtS:getNum("ECtS"), dE_AB_1mLTotal_100mLS:getNum("dE_AB_1mLTotal_100mLS") };
@@ -378,7 +372,7 @@ function saveSimple(){
 }
 function loadK(){
   const d=JSON.parse(localStorage.getItem(KEY_KMODE)||"null"); if(!d) return;
-  for(const k in d) if($(k)) $(k).value=d[k];
+  for(const k in d) if(document.getElementById(k)) document.getElementById(k).value=d[k];
 }
 function saveK(){
   const d={
@@ -397,22 +391,11 @@ function unitName(){ return isUnitML()? "mL":"µL"; }
 function toUnit(v_uL){ return isUnitML()? round1(v_uL/1000): Number(v_uL.toFixed(1)); }
 function cellVol(v_uL){ return toUnit(v_uL).toFixed(1); }
 
-/* ===== 10wt% 용액: g(용질) -> mL(용액) 변환 =====
-   - 용액 1 mL 질량 = rho (g)
-   - 그 중 용질 질량 = rho * 0.10 (g)
-   => 필요한 용질 g를 만들기 위한 용액 mL = g / (rho*0.10)
-*/
-function soluteG_to_stockML(solute_g, rho=RHO_STOCK_DEFAULT){
-  const denom = rho * SOLUTE_MASSFRAC_IN_10WT;
-  if(denom<=0) return NaN;
-  return solute_g / denom;
-}
-
 /* ===== 결과 표 (K모드) ===== */
 function tableK(vA_uL, vB_uL, kStock_mL, mgStock_mL){
-  const u=unitName();
-  const kDisp = isUnitML() ? kStock_mL.toFixed(2) : (kStock_mL*1000).toFixed(1);
+  const kDisp  = isUnitML() ? kStock_mL.toFixed(2)  : (kStock_mL*1000).toFixed(1);
   const mgDisp = isUnitML() ? mgStock_mL.toFixed(2) : (mgStock_mL*1000).toFixed(1);
+  const u = unitName();
   const uStock = isUnitML() ? "mL" : "µL";
 
   return `
@@ -429,15 +412,15 @@ function tableK(vA_uL, vB_uL, kStock_mL, mgStock_mL){
 
 /* ===== 계산(양액만) ===== */
 function calcSimple(){
-  const V=getNum("VbatchS"),E=getNum("ECtS"),dAB=getNum("dE_AB_1mLTotal_100mLS");
+  const V=getNum("VbatchS"), E=getNum("ECtS"), dAB=getNum("dE_AB_1mLTotal_100mLS");
   setHTML("resultS",""); setText("metaS","");
   if([V,E,dAB].some(x=>!Number.isFinite(x)||x<0)){ setHTML("resultS","입력 확인");return; }
   if(V===0){ setHTML("resultS","부피 0 불가");return; }
   if(dAB===0){ setHTML("resultS","AB EC증분 0 불가");return; }
 
-  // 기준: 100 mL 물에 AB(총 1 mL) → 1/100 = 0.01 => 10 mL/L
+  // 기준: 100 mL 물에 AB(총 1 mL) → 10 mL/L
   const aAB = dAB / 10;         // EC per (mL/L)
-  const vAB_mL = (E * V) / aAB; // AB 총량 (mL) (A+B 합, 총 1:1)
+  const vAB_mL = (E * V) / aAB; // AB 총량 (mL) (A+B 합)
   const vA_uL = (vAB_mL/2) * 1000;
   const vB_uL = (vAB_mL/2) * 1000;
 
@@ -470,46 +453,34 @@ function calcK(){
   if(V===0){ setHTML("result","부피 0 불가");return; }
   if(tn<=0){ setHTML("result","tN 0 불가");return; }
   if(kMgRatio<=0){ setHTML("result","K:Mg 비율 0 불가");return; }
-  if(dAB===0){ setHTML("result","AB EC증분 0 불가");return; }
-  if(dKstock===0){ setHTML("result","K용액 EC증분 0 불가");return; }
-  if(dMgstock===0){ setHTML("result","Mg용액 EC증분 0 불가");return; }
+  if(dAB===0 || dKstock===0 || dMgstock===0){ setHTML("result","EC증분 0 불가");return; }
 
   const r = tk/tn;
 
   // 기준: 100 mL 물에 10wt% 용액 1 mL → 10 mL/L
-  const aAB = dAB / 10;         // EC per (mL/L)  (AB 총량 기준)
-  const aK  = dKstock / 10;     // EC per (mL/L)  (K2SO4 10wt% 용액)
-  const aMg = dMgstock / 10;    // EC per (mL/L)  (MgSO4·7H2O 10wt% 용액)
+  const aAB = dAB / 10;         // EC per (mL/L)  (AB 총량)
+  const aK  = dKstock / 10;     // EC per (mL/L)  (K stock)
+  const aMg = dMgstock / 10;    // EC per (mL/L)  (Mg stock)
 
-  // ===== 기존 네 K-비례식(AB로부터 K 원소량 산출) 유지 =====
-  // vAB는 µL, vAB(mL)=vAB/1000
+  // ===== 기존 네 K-비례식 유지 =====
   const kElem_g_per_uL_AB = Math.max(0, RHO_AB*(0.0575*r - 0.0425) / 1000);
   const k2so4_g_per_uL_AB = kElem_g_per_uL_AB / MASSFRAC_K_IN_K2SO4;
 
   const doMg = (r > 1.5);
   const mgElem_g_per_uL_AB = doMg ? (kElem_g_per_uL_AB / kMgRatio) : 0;
-
-  // (중요) MgSO4·7H2O 기준
   const mgso4_7h2o_g_per_uL_AB  = doMg ? (mgElem_g_per_uL_AB / MASSFRAC_MG_IN_MGSO4_7H2O) : 0;
 
-  // ===== 분말 g를 10wt% 용액 mL로 환산 =====
+  // 분말 g -> 10wt% 용액 mL 환산 (밀도 RHO_STOCK_DEFAULT 가정)
   const kStock_mL_per_uL_AB  = k2so4_g_per_uL_AB / (RHO_STOCK_DEFAULT * SOLUTE_MASSFRAC_IN_10WT);
   const mgStock_mL_per_uL_AB = mgso4_7h2o_g_per_uL_AB / (RHO_STOCK_DEFAULT * SOLUTE_MASSFRAC_IN_10WT);
 
-  // 총 모델(EC):
-  // E = aAB*(mL_AB/L) + aK*(mL_K/L) + aMg*(mL_Mg/L)
-  // mL_AB = vAB_uL/1000
-  // mL_K  = kStock_mL_per_uL_AB * vAB_uL
-  // mL_Mg = mgStock_mL_per_uL_AB * vAB_uL
-  //
-  // => E = ( aAB*(1/1000) + aK*kStock_mL_per_uL_AB + aMg*mgStock_mL_per_uL_AB ) * (vAB_uL / V)
+  // E = ( aAB*(1/1000) + aK*kStock_mL_per_uL_AB + aMg*mgStock_mL_per_uL_AB ) * (vAB_uL / V)
   const denom = (aAB/1000) + aK*kStock_mL_per_uL_AB + aMg*mgStock_mL_per_uL_AB;
   if(denom <= 0){ setHTML("result","계산 불가(분모 0)"); return; }
 
   const vAB_uL = (E * V) / denom; // AB 총량(µL)
   const vA_uL = vAB_uL/2, vB_uL = vAB_uL/2;
 
-  // K/Mg 10wt% 용액 부피(mL)
   const kStock_mL  = kStock_mL_per_uL_AB  * vAB_uL;
   const mgStock_mL = mgStock_mL_per_uL_AB * vAB_uL;
 
@@ -518,35 +489,18 @@ function calcK(){
 
   setText("debugBox",
 `r=tK/tN = ${r.toFixed(4)} (Mg auto: ${doMg})
-
-[입력 기준]
-- "100 mL 물에 10wt% 용액 1 mL" 기준 (=> 10 mL/L)
-
-aAB = dE_AB/10   = ${aAB.toFixed(6)} (EC per mL/L)
-aK  = dE_K/10    = ${aK.toFixed(6)} (EC per mL/L)
-aMg = dE_Mg/10   = ${aMg.toFixed(6)} (EC per mL/L)
-
-[원소/염 환산]
-k2so4_g_per_uL_AB      = ${k2so4_g_per_uL_AB.toExponential(6)}
-mgso4_7h2o_g_per_uL_AB = ${mgso4_7h2o_g_per_uL_AB.toExponential(6)}
-
-[10wt% 용액 환산]
-kStock_mL_per_uL_AB    = ${kStock_mL_per_uL_AB.toExponential(6)} (mL stock per µL AB)
-mgStock_mL_per_uL_AB   = ${mgStock_mL_per_uL_AB.toExponential(6)} (mL stock per µL AB)
-
-denom = ${denom.toExponential(6)}
-vAB = ${vAB_uL.toFixed(2)} µL (A+B 합, AB 총량)
-K stock = ${kStock_mL.toFixed(4)} mL
-Mg stock = ${mgStock_mL.toFixed(4)} mL`);
+aAB=${aAB.toFixed(6)} aK=${aK.toFixed(6)} aMg=${aMg.toFixed(6)}
+denom=${denom.toExponential(6)}
+vAB=${vAB_uL.toFixed(2)} µL
+K stock=${kStock_mL.toFixed(4)} mL
+Mg stock=${mgStock_mL.toFixed(4)} mL`);
 }
 
-function recalc(){ isKMode()? calcK(): calcSimple(); }
-
-/* ===== 프리셋 잠금: 칼륨카드에서 용량만 가능 ===== */
+/* ===== 프리셋 잠금 ===== */
 function lockByPreset(locked){
   const ids = ["ECt","dE_AB_1mLTotal_100mL","tK","tN","dE_Kstock_1mL_100mL","dE_Mgstock_1mL_100mL","KMgRatio"];
   ids.forEach(id=>{
-    const el = $(id);
+    const el = document.getElementById(id);
     if(!el) return;
     const box = el.parentElement;
     if(locked){
@@ -562,14 +516,8 @@ function lockByPreset(locked){
 }
 
 /* ===== 프리셋 UI ===== */
-function openPreset(){
-  $("presetModal").classList.add("open");
-  $("presetModal").setAttribute("aria-hidden","false");
-}
-function closePreset(){
-  $("presetModal").classList.remove("open");
-  $("presetModal").setAttribute("aria-hidden","true");
-}
+function openPreset(){ $("presetModal").classList.add("open"); $("presetModal").setAttribute("aria-hidden","false"); }
+function closePreset(){ $("presetModal").classList.remove("open"); $("presetModal").setAttribute("aria-hidden","true"); }
 function presetLabel(p){ return `프리셋: ${p ? p.name : "없음"}`; }
 
 function renderPresetList(){
@@ -583,7 +531,6 @@ function renderPresetList(){
     wrap.appendChild(div);
   }
 }
-
 function loadPresetUI(){
   const id = localStorage.getItem(KEY_PRESET);
   const p = PRESETS.find(x=>x.id===id) || null;
@@ -591,14 +538,11 @@ function loadPresetUI(){
   lockByPreset(!!id);
   if(!!id && !isKMode()) applyModeUI(true);
 }
-
 function clearPreset(){
   localStorage.removeItem(KEY_PRESET);
   $("presetNow").textContent = presetLabel(null);
   lockByPreset(false);
 }
-
-/* 프리셋 적용 */
 function applyPreset(presetId){
   const p = PRESETS.find(x=>x.id===presetId);
   if(!p) return;
@@ -610,75 +554,103 @@ function applyPreset(presetId){
   $("tK").value  = p.nk.toFixed(2);
   $("KMgRatio").value = "4.0";
 
-  // 기본값(10wt% 용액 기준, 예시값)
+  // 예시 기본값(10wt% 기준)
   if(!Number.isFinite(getNum("dE_Kstock_1mL_100mL")))  $("dE_Kstock_1mL_100mL").value  = "0.56";
   if(!Number.isFinite(getNum("dE_Mgstock_1mL_100mL"))) $("dE_Mgstock_1mL_100mL").value = "0.34";
 
-  saveK();
-
   localStorage.setItem(KEY_PRESET, presetId);
   $("presetNow").textContent = presetLabel(p);
-
   lockByPreset(true);
   closePreset();
-  recalc();
+  saveK();
+  calcK();
 }
 
-/* ===== 이벤트 ===== */
-$("btnCalcS").addEventListener("click",calcSimple);
-$("btnCalc").addEventListener("click",calcK);
+/* ===== 서비스워커(https/localhost에서만) ===== */
+async function tryRegisterSW(){
+  const el = document.getElementById("swStatus");
+  const proto = location.protocol;
+  const isLocalhost = (location.hostname === "localhost" || location.hostname === "127.0.0.1");
+  const ok = (proto === "https:" || isLocalhost);
 
-// 저장
-["VbatchS","ECtS","dE_AB_1mLTotal_100mLS"].forEach(id=> $(id).addEventListener("change",()=>{saveSimple()}));
-["Vbatch","ECt","dE_AB_1mLTotal_100mL","tK","tN","dE_Kstock_1mL_100mL","dE_Mgstock_1mL_100mL","KMgRatio"]
-.forEach(id=> $(id).addEventListener("change",()=>{saveK()}));
-
-// 모드 전환: 프리셋 있으면 양액만 금지
-$("modeSwitch").addEventListener("change", e=>{
-  if(hasPreset() && !e.target.checked){
-    e.target.checked = true;
-    applyModeUI(true);
+  if(!("serviceWorker" in navigator)){
+    if(el) el.textContent = "PWA: Service Worker 미지원";
     return;
   }
-  applyModeUI(e.target.checked);
-  recalc();
-});
-$("chipSimple").addEventListener("click", ()=>{
-  if(hasPreset()){
-    applyModeUI(true);
+  if(!ok){
+    if(el) el.textContent = "PWA: file://에서는 SW 비활성 (서버로 열어야 함)";
     return;
   }
-  applyModeUI(false);
-  recalc();
-});
-$("chipK").addEventListener("click", ()=>{
-  applyModeUI(true);
-  recalc();
-});
-
-$("unitSwitch").addEventListener("change",e=>{applyUnitUI(e.target.checked);recalc();});
-
-$("btnPreset").addEventListener("click", openPreset);
-$("presetClose").addEventListener("click", closePreset);
-$("presetModal").addEventListener("click", (e)=>{ if(e.target === $("presetModal")) closePreset(); });
-
-$("btnPresetClear").addEventListener("click", ()=>{ clearPreset(); });
-$("btnPresetClearInModal").addEventListener("click", ()=>{ clearPreset(); closePreset(); });
-
-/* ===== 초기 로드 ===== */
-(function(){
-  applyModeUI(isKMode());
-  applyUnitUI(isUnitML());
-  loadSimple();
-  loadK();
-  renderPresetList();
-  loadPresetUI();
-  if(hasPreset()){
-    applyModeUI(true);
-    lockByPreset(true);
-    recalc();
+  try{
+    const reg = await navigator.serviceWorker.register("./service-worker.js", { scope: "./" });
+    if(el) el.textContent = "PWA: 서비스워커 등록됨";
+    reg.addEventListener("updatefound", ()=>{ if(el) el.textContent = "PWA: 업데이트 감지(새로고침하면 적용)"; });
+  }catch(e){
+    if(el) el.textContent = "PWA: 서비스워커 등록 실패(경로/서버 확인)";
   }
-})();
+}
+
+/* ===== 초기화 ===== */
+document.addEventListener("DOMContentLoaded", ()=>{
+  try{
+    // UI 상태
+    applyModeUI(isKMode());
+    applyUnitUI(isUnitML());
+
+    // 값 로드
+    loadSimple();
+    loadK();
+
+    // 프리셋
+    renderPresetList();
+    loadPresetUI();
+
+    // 버튼 이벤트
+    $("btnCalcS").addEventListener("click",calcSimple);
+    $("btnCalc").addEventListener("click",calcK);
+
+    // 저장 이벤트
+    ["VbatchS","ECtS","dE_AB_1mLTotal_100mLS"].forEach(id=> document.getElementById(id).addEventListener("change",saveSimple));
+    ["Vbatch","ECt","dE_AB_1mLTotal_100mL","tK","tN","dE_Kstock_1mL_100mL","dE_Mgstock_1mL_100mL","KMgRatio"]
+      .forEach(id=> document.getElementById(id).addEventListener("change",saveK));
+
+    // 모드/단위
+    $("modeSwitch").addEventListener("change", e=>{
+      if(hasPreset() && !e.target.checked){
+        e.target.checked = true;
+        applyModeUI(true);
+        return;
+      }
+      applyModeUI(e.target.checked);
+    });
+    $("chipSimple").addEventListener("click", ()=>{
+      if(hasPreset()){ applyModeUI(true); return; }
+      applyModeUI(false);
+    });
+    $("chipK").addEventListener("click", ()=>applyModeUI(true));
+
+    $("unitSwitch").addEventListener("change", e=>applyUnitUI(e.target.checked));
+
+    // 프리셋 모달
+    $("btnPreset").addEventListener("click", openPreset);
+    $("presetClose").addEventListener("click", closePreset);
+    $("presetModal").addEventListener("click", (e)=>{ if(e.target === $("presetModal")) closePreset(); });
+    $("btnPresetClear").addEventListener("click", clearPreset);
+    $("btnPresetClearInModal").addEventListener("click", ()=>{ clearPreset(); closePreset(); });
+
+    // 프리셋 있으면 K모드 강제 + 계산
+    if(hasPreset()){
+      applyModeUI(true);
+      lockByPreset(true);
+      calcK();
+    }
+
+    // SW
+    tryRegisterSW();
+  }catch(err){
+    showFatal(err);
+  }
+});
 </script>
 </body>
 </html>
