@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액 계산기</title>
+<title>양액ㅛㅅ 계산기</title>
 
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#007BFF">
@@ -211,8 +211,8 @@ details > summary{
     </div>
     <div class="row">
       <div>
-        <label for="dE_AB_1mLTotal_100mLS">AB(10wt%): 100 mL 물에 A 0.5 mL + B 0.5 mL(총 1 mL) → EC 증가 (mS/cm)</label>
-        <input type="number" id="dE_AB_1mLTotal_100mLS" step="0.01" min="0" placeholder="예: 0.40">
+        <label for="dE_AB_1mLTotal_100mLS">AB(10wt%): 100 mL 물에 A 0.25 mL + B 0.25 mL(총 0.5 mL) → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_AB_1mLTotal_100mLS" step="0.01" min="0" placeholder="예: 0.20">
       </div>
     </div>
     <button class="btn" id="btnCalcS">계산하기</button>
@@ -237,8 +237,8 @@ details > summary{
 
     <div class="row">
       <div>
-        <label for="dE_AB_1mLTotal_100mL">AB(10wt%): 100 mL 물에 A 0.5 mL + B 0.5 mL(총 1 mL) → EC 증가 (mS/cm)</label>
-        <input type="number" id="dE_AB_1mLTotal_100mL" step="0.01" min="0" placeholder="예: 0.40">
+        <label for="dE_AB_1mLTotal_100mL">AB(10wt%): 100 mL 물에 A 0.25 mL + B 0.25 mL(총 0.5 mL) → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_AB_1mLTotal_100mL" step="0.01" min="0" placeholder="예: 0.20">
       </div>
       <div>
         <label for="tK">목표 K</label>
@@ -252,12 +252,12 @@ details > summary{
 
     <div class="row">
       <div>
-        <label for="dE_Kstock_1mL_100mL">K₂SO₄(10wt% 용액): 100 mL 물에 1 mL → EC 증가 (mS/cm)</label>
-        <input type="number" id="dE_Kstock_1mL_100mL" step="0.01" min="0" value="0.56">
+        <label for="dE_Kstock_1mL_100mL">K₂SO₄: 100 mL 물에 0.5 g → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_Kstock_1mL_100mL" step="0.01" min="0" value="8.50">
       </div>
       <div>
-        <label for="dE_Mgstock_1mL_100mL">MgSO₄·7H₂O(10wt% 용액): 100 mL 물에 1 mL → EC 증가 (mS/cm)</label>
-        <input type="number" id="dE_Mgstock_1mL_100mL" step="0.01" min="0" value="0.34">
+        <label for="dE_Mgstock_1mL_100mL">MgSO₄·7H₂O: 100 mL 물에 0.5 g → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_Mgstock_1mL_100mL" step="0.01" min="0" value="5.00">
       </div>
       <div>
         <label for="KMgRatio">K:Mg 목표비 (질량비)</label>
@@ -326,8 +326,8 @@ const M_MGSO4_7H2O = (ATOMIC.Mg + ATOMIC.S + 4*ATOMIC.O) + 7*M_H2O;
 const MASSFRAC_MG_IN_MGSO4_7H2O = ATOMIC.Mg / M_MGSO4_7H2O;
 
 /* ===== storage KEY ===== */
-const KEY_SIMPLE="nutri_calc_simple_v10";
-const KEY_KMODE ="nutri_calc_kmode_v10";
+const KEY_SIMPLE="nutri_calc_simple_v11"; // 버전 올림(기준 변경)
+const KEY_KMODE ="nutri_calc_kmode_v11";
 const KEY_MODE  ="nutri_calc_mode_v10";
 const KEY_UNIT  ="nutri_calc_unit_v10";
 const KEY_PRESET="nutri_calc_preset_v10";
@@ -346,11 +346,6 @@ const PRESETS = [
 
 /* ===== DOM 유틸(절대 throw하지 않기) ===== */
 function $(id){ return document.getElementById(id); }
-function must(id){
-  const el = document.getElementById(id);
-  if(!el) throw new Error(`DOM 요소 없음: #${id}`);
-  return el;
-}
 const getNum = id => {
   const el = $(id);
   if(!el) return NaN;
@@ -460,8 +455,10 @@ function calcSimple(){
   if(V===0){ setHTML("resultS","부피 0 불가");return; }
   if(dAB===0){ setHTML("resultS","AB EC증분 0 불가");return; }
 
-  // 기준: 100 mL 물에 AB(총 1 mL) → 10 mL/L
-  const aAB = dAB / 10;         // EC per (mL/L)
+  // 기준 변경:
+  // dAB = "100 mL 물에 AB 총 0.5 mL" 일 때 EC 증가
+  // => 0.5 mL / 0.1 L = 5 mL/L
+  const aAB = dAB / 5;          // EC per (mL/L)
   const vAB_mL = (E * V) / aAB; // AB 총량 (mL) (A+B 합)
   const vA_uL = (vAB_mL/2) * 1000;
   const vB_uL = (vAB_mL/2) * 1000;
@@ -483,26 +480,29 @@ function calcK(){
   const V=getNum("Vbatch"), E=getNum("ECt"),
         dAB=getNum("dE_AB_1mLTotal_100mL"),
         tk=getNum("tK"), tn=getNum("tN"),
-        dKstock=getNum("dE_Kstock_1mL_100mL"),
-        dMgstock=getNum("dE_Mgstock_1mL_100mL"),
+        dK_0p5g=getNum("dE_Kstock_1mL_100mL"),
+        dMg_0p5g=getNum("dE_Mgstock_1mL_100mL"),
         kMgRatio=getNum("KMgRatio");
 
   setHTML("result",""); setText("meta",""); setText("debugBox","");
 
-  if([V,E,dAB,tk,tn,dKstock,dMgstock,kMgRatio].some(x=>!Number.isFinite(x)||x<0)){
+  if([V,E,dAB,tk,tn,dK_0p5g,dMg_0p5g,kMgRatio].some(x=>!Number.isFinite(x)||x<0)){
     setHTML("result","입력 확인");return;
   }
   if(V===0){ setHTML("result","부피 0 불가");return; }
   if(tn<=0){ setHTML("result","tN 0 불가");return; }
   if(kMgRatio<=0){ setHTML("result","K:Mg 비율 0 불가");return; }
-  if(dAB===0 || dKstock===0 || dMgstock===0){ setHTML("result","EC증분 0 불가");return; }
+  if(dAB===0 || dK_0p5g===0 || dMg_0p5g===0){ setHTML("result","EC증분 0 불가");return; }
 
   const r = tk/tn;
 
-  // 기준: 100 mL 물에 10wt% 용액 1 mL → 10 mL/L
-  const aAB = dAB / 10;         // EC per (mL/L)  (AB 총량)
-  const aK  = dKstock / 10;     // EC per (mL/L)  (K stock)
-  const aMg = dMgstock / 10;    // EC per (mL/L)  (Mg stock)
+  // ===== EC 환산 계수(기준 변경) =====
+  // AB: 0.5 mL / 100 mL = 5 mL/L
+  const aAB = dAB / 5;          // EC per (mL/L)  (AB 총량)
+
+  // K2SO4: 0.5 g / 100 mL = 5 g/L
+  const aK_gL  = dK_0p5g / 5;   // EC per (g/L) (K2SO4)
+  const aMg_gL = dMg_0p5g / 5;  // EC per (g/L) (MgSO4·7H2O)
 
   // ===== 기존 네 K-비례식 유지 =====
   const kElem_g_per_uL_AB = Math.max(0, RHO_AB*(0.0575*r - 0.0425) / 1000);
@@ -512,12 +512,18 @@ function calcK(){
   const mgElem_g_per_uL_AB = doMg ? (kElem_g_per_uL_AB / kMgRatio) : 0;
   const mgso4_7h2o_g_per_uL_AB  = doMg ? (mgElem_g_per_uL_AB / MASSFRAC_MG_IN_MGSO4_7H2O) : 0;
 
-  // 분말 g -> 10wt% 용액 mL 환산 (밀도 RHO_STOCK_DEFAULT 가정)
+  // 출력은 기존대로 10wt% 용액 mL로 환산(투입 방식 유지)
   const kStock_mL_per_uL_AB  = k2so4_g_per_uL_AB / (RHO_STOCK_DEFAULT * SOLUTE_MASSFRAC_IN_10WT);
   const mgStock_mL_per_uL_AB = mgso4_7h2o_g_per_uL_AB / (RHO_STOCK_DEFAULT * SOLUTE_MASSFRAC_IN_10WT);
 
-  // E = ( aAB*(1/1000) + aK*kStock_mL_per_uL_AB + aMg*mgStock_mL_per_uL_AB ) * (vAB_uL / V)
-  const denom = (aAB/1000) + aK*kStock_mL_per_uL_AB + aMg*mgStock_mL_per_uL_AB;
+  // ===== 목표 EC 식 =====
+  // AB농도(mL/L) = (vAB_uL/1000) / V
+  // K농도(g/L)   = (k2so4_g_per_uL_AB * vAB_uL) / V
+  // Mg농도(g/L)  = (mgso4_7h2o_g_per_uL_AB * vAB_uL) / V
+  //
+  // E = aAB*(vAB_uL/1000)/V + aK_gL*(k2so4_g_per_uL_AB*vAB_uL)/V + aMg_gL*(mgso4_g_per_uL_AB*vAB_uL)/V
+  //   = [ aAB/1000 + aK_gL*k2so4_g_per_uL_AB + aMg_gL*mgso4_g_per_uL_AB ] * (vAB_uL / V)
+  const denom = (aAB/1000) + (aK_gL*k2so4_g_per_uL_AB) + (aMg_gL*mgso4_7h2o_g_per_uL_AB);
   if(denom <= 0){ setHTML("result","계산 불가(분모 0)"); return; }
 
   const vAB_uL = (E * V) / denom; // AB 총량(µL)
@@ -531,7 +537,9 @@ function calcK(){
 
   setText("debugBox",
 `r=tK/tN = ${r.toFixed(4)} (Mg auto: ${doMg})
-aAB=${aAB.toFixed(6)} aK=${aK.toFixed(6)} aMg=${aMg.toFixed(6)}
+aAB(0.5mL/100mL)=${aAB.toFixed(6)}  [mS per (mL/L)]
+aK(0.5g/100mL)=${aK_gL.toFixed(6)} [mS per (g/L)]
+aMg(0.5g/100mL)=${aMg_gL.toFixed(6)} [mS per (g/L)]
 denom=${denom.toExponential(6)}
 vAB=${vAB_uL.toFixed(2)} µL
 K stock=${kStock_mL.toFixed(4)} mL
@@ -597,10 +605,7 @@ function applyPreset(presetId){
   if($("tK"))  $("tK").value  = p.nk.toFixed(2);
   if($("KMgRatio")) $("KMgRatio").value = "4.0";
 
-  // 예시 기본값(10wt% 기준)
-  if(!Number.isFinite(getNum("dE_Kstock_1mL_100mL")) && $("dE_Kstock_1mL_100mL"))  $("dE_Kstock_1mL_100mL").value  = "0.56";
-  if(!Number.isFinite(getNum("dE_Mgstock_1mL_100mL")) && $("dE_Mgstock_1mL_100mL")) $("dE_Mgstock_1mL_100mL").value = "0.34";
-
+  // NOTE: K/Mg EC증분 값은 사용자 실측 기준(0.5g/100mL)이라 여기선 자동 기본값 강제 안 함
   SafeStorage.setItem(KEY_PRESET, presetId);
   if($("presetNow")) $("presetNow").textContent = presetLabel(p);
   lockByPreset(true);
