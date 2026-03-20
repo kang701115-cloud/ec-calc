@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액계산기</title>
+<title>양액 계산기</title>
 
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#007BFF">
@@ -826,63 +826,7 @@ Ca ppm (AB 2.25%, density 1.21) = ${ca_ppm.toFixed(4)}`);
 
   saveK();
 }
-  if(V===0){ setHTML("result","부피 0 불가"); return; }
-  if(tn<=0){ setHTML("result","목표 N 비율값 0 불가"); return; }
-  if(kMgRatio<=0){ setHTML("result","K:Mg 비율 0 불가"); return; }
-  if(dAB===0 || dK_100uL===0 || dMg_100uL===0){ setHTML("result","EC증분 0 불가"); return; }
-
-  const r = tk / tn;
-
-  // 기준 환산
-  const aAB = dAB / 5;
-  const aK_mLL  = dK_100uL * 10;
-  const aMg_mLL = dMg_100uL * 10;
-
-  const doMg = (r > 1.5);
-
-  // 초기값
-  let ab_mL = (E * V) / aAB;
-
-  let k2so4_g = 0;
-  let mgso4_g = 0;
-
-  let k2so4_mL = 0;
-  let mgso4_mL = 0;
-
-  let extraEC = 0;
-  let ecFromK = 0;
-  let ecFromMg = 0;
-
-  for(let i=0; i<8; i++){
-    const ab_uL = ab_mL * 1000;
-
-    const kElem_g_per_uL_AB = kElemPerULFromRatio(r);
-    const kElem_g = kElem_g_per_uL_AB * ab_uL;
-
-    k2so4_g = kElem_g / MASSFRAC_K_IN_K2SO4;
-    k2so4_mL = gToStockmL(k2so4_g);
-
-    if(doMg){
-      const mgElem_g = kElem_g / kMgRatio;
-      mgso4_g = mgElem_g / MASSFRAC_MG_IN_MGSO4_7H2O;
-      mgso4_mL = gToStockmL(mgso4_g);
-    }else{
-      mgso4_g = 0;
-      mgso4_mL = 0;
-    }
-
-    ecFromK  = (k2so4_mL / V) * aK_mLL;
-    ecFromMg = (mgso4_mL / V) * aMg_mLL;
-    extraEC = ecFromK + ecFromMg;
-
-    const remainingEC = Math.max(0, E - extraEC);
-    ab_mL = (remainingEC * V) / aAB;
-  }
-
-  const vAB_uL = ab_mL * 1000;
-  const vA_uL = vAB_uL / 2;
-  const vB_uL = vAB_uL / 2;
-
+ 
   const ecFromAB = (ab_mL / V) * aAB;
   const totalEC = ecFromAB + extraEC;
 
