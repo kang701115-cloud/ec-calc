@@ -357,6 +357,48 @@ input {
 input:checked + .slider:before {
   transform: translateX(20px);
 }
+  .switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 18px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background: #cfe2ff;
+  border-radius: 999px;
+  transition: 0.2s;
+}
+
+.slider:before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  top: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+}
+
+/* ON 상태 */
+input:checked + .slider {
+  background: #7aa7ff;
+}
+
+input:checked + .slider:before {
+  transform: translateX(18px);
+}
 </style>
 </head>
 
