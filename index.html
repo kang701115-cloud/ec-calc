@@ -11,36 +11,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <style>
-  .row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: stretch; /* 추가 */
-}
-
-.row > div {
-  flex: 1 1 220px;
-  display: flex;           /* 추가 */
-  flex-direction: column;  /* 추가 */
-}
-
-label {
-  display: block;
-  margin-top: 12px;
-  font-weight: 700;
-  min-height: 20px; /* 추가 (라인 맞추기) */
-}
-
-input {
-  width: 100%;
-  padding: 12px;
-  margin-top: 6px;
-  border: 1px solid #d7d7d7;
-  border-radius: 10px;
-  font-size: 1.05rem;
-  background: #fff;
-  height: 48px; /* 추가 (핵심) */
-}
 :root{
   --brand:#007BFF;
   --brand-dark:#0056b3;
@@ -307,6 +277,36 @@ details > summary{
 @media (max-width:480px){
   body{padding:14px}
   table{font-size:0.92rem}
+}
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: stretch; /* 추가 */
+}
+
+.row > div {
+  flex: 1 1 220px;
+  display: flex;           /* 추가 */
+  flex-direction: column;  /* 추가 */
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 700;
+  min-height: 20px; /* 추가 (라인 맞추기) */
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  background: #fff;
+  height: 48px; /* 추가 (핵심) */
 }
 </style>
 </head>
