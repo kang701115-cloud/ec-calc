@@ -338,7 +338,6 @@ details > summary{
 }
 </style>
 </head>
-
 <body>
 
 <h1>양액 배합 계산기</h1>
@@ -404,27 +403,17 @@ details > summary{
   <div class="card" id="cardSimple">
     <h2>양액만</h2>
     <div class="row">
-  <div>
-    <label for="coefS">보정계수 (100mL + 100µL → EC 증가)</label>
-    <input type="number" id="coefS" step="0.01" min="0" placeholder="예: 0.20">
-  </div>
-  <div>
-    <label for="VsolventS">용매 (mL)</label>
-    <input type="number" id="VsolventS" step="1" min="0" placeholder="예: 1000">
-  </div>
-  <div>
-    <label for="VsoluteS">용질 (µL)</label>
-    <input type="number" id="VsoluteS" step="1" min="0" placeholder="예: 500">
-  </div>
-</div>
-        <label for="ECtS">목표 EC (mS/cm)</label>
-        <input type="number" id="ECtS" step="0.01" min="0" placeholder="예: 1.20">
-      </div>
-    </div>
-    <div class="row">
       <div>
-        <label for="dE_AB_1mLTotal_100mLS">AB 100 mL 물에 A 0.25 mL + B 0.25 mL(총 0.5 mL) → EC 증가 (mS/cm)</label>
-        <input type="number" id="dE_AB_1mLTotal_100mLS" step="0.01" min="0" placeholder="예: 0.20">
+        <label for="coefS">보정계수 (100 mL 물에 100 µL 투입 시 EC 증가, mS/cm)</label>
+        <input type="number" id="coefS" step="0.01" min="0" placeholder="예: 0.20">
+      </div>
+      <div>
+        <label for="VsolventS">용매 용량 (mL)</label>
+        <input type="number" id="VsolventS" step="0.1" min="0" placeholder="예: 100, 1000">
+      </div>
+      <div>
+        <label for="VsoluteS">용질 용량 (µL)</label>
+        <input type="number" id="VsoluteS" step="0.1" min="0" placeholder="예: 50, 500">
       </div>
     </div>
     <button class="btn" id="btnCalcS">계산하기</button>
@@ -527,6 +516,8 @@ const SafeStorage = (() => {
 /* ===== 상수 ===== */
 const RHO_AB = 1.21;
 const STOCK_WTFRAC = 0.10;
+const CA_WTFRAC_IN_AB = 0.0225;
+
 const ATOMIC = {
   K:39.0983,
   Mg:24.305,
@@ -545,10 +536,10 @@ const M_MGSO4_7H2O = (ATOMIC.Mg + ATOMIC.S + 4*ATOMIC.O) + 7*M_H2O;
 const MASSFRAC_MG_IN_MGSO4_7H2O = ATOMIC.Mg / M_MGSO4_7H2O;
 
 /* ===== storage KEY ===== */
-const KEY_SIMPLE="nutri_calc_simple_v17";
-const KEY_KMODE ="nutri_calc_kmode_v17";
-const KEY_MODE  ="nutri_calc_mode_v17";
-const KEY_UNIT  ="nutri_calc_unit_v17";
+const KEY_SIMPLE="nutri_calc_simple_v18";
+const KEY_KMODE ="nutri_calc_kmode_v18";
+const KEY_MODE  ="nutri_calc_mode_v18";
+const KEY_UNIT  ="nutri_calc_unit_v18";
 
 /* ===== DOM 유틸 ===== */
 function $(id){ return document.getElementById(id); }
@@ -599,7 +590,7 @@ function loadSimple(){
   if(!d) return;
   for(const k in d){
     const el = $(k);
-    if(el) el.value = d[k];
+    if(el && Number.isFinite(d[k])) el.value = d[k];
   }
 }
 function saveSimple(){
@@ -610,15 +601,13 @@ function saveSimple(){
   };
   SafeStorage.setItem(KEY_SIMPLE,JSON.stringify(d));
 }
-  SafeStorage.setItem(KEY_SIMPLE,JSON.stringify(d));
-}
 function loadK(){
   let d=null;
   try{ d=JSON.parse(SafeStorage.getItem(KEY_KMODE)||"null"); }catch(e){ d=null; }
   if(!d) return;
   for(const k in d){
     const el = $(k);
-    if(el) el.value = d[k];
+    if(el && Number.isFinite(d[k])) el.value = d[k];
   }
 }
 function saveK(){
@@ -641,14 +630,12 @@ function toUnit(v_uL){ return isUnitML()? round1(v_uL/1000): Number(v_uL.toFixed
 function cellVol(v_uL){ return toUnit(v_uL).toFixed(1); }
 
 /* ===== 결과 표 ===== */
-function tableSimple(vA_uL, vB_uL){
-  const u = unitName();
+function tableSimple(ec){
   return `
   <table>
     <thead><tr><th>항목</th><th>값</th><th>단위</th></tr></thead>
     <tbody>
-      <tr><td>A액(10wt%)</td><td>${cellVol(vA_uL)}</td><td>${u}</td></tr>
-      <tr><td>B액(10wt%)</td><td>${cellVol(vB_uL)}</td><td>${u}</td></tr>
+      <tr><td>예상 EC 증가</td><td>${ec.toFixed(3)}</td><td>mS/cm</td></tr>
     </tbody>
   </table>`;
 }
@@ -668,34 +655,40 @@ function tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL){
 
 /* ===== 계산(양액만) ===== */
 function calcSimple(){
-
   const coef = getNum("coefS");
-  const solvent = getNum("VsolventS");
-  const solute = getNum("VsoluteS");
+  const Vsolvent = getNum("VsolventS");
+  const Vsolute = getNum("VsoluteS");
 
   setHTML("resultS","");
   setText("metaS","");
 
-  if([coef, solvent, solute].some(x=>!Number.isFinite(x)||x<=0)){
+  if([coef,Vsolvent,Vsolute].some(x=>!Number.isFinite(x)||x<0)){
     setHTML("resultS","입력 확인");
     return;
   }
+  if(Vsolvent===0){
+    setHTML("resultS","용매 0 불가");
+    return;
+  }
+  if(coef===0 || Vsolute===0){
+    setHTML("resultS", tableSimple(0));
+    setText("metaS",
+`보정계수 = ${coef.toFixed(3)} mS/cm
+용매 = ${Vsolvent.toFixed(1)} mL
+용질 = ${Vsolute.toFixed(1)} µL`);
+    saveSimple();
+    return;
+  }
 
-  const EC = coef * (solute / solvent);
+  const ec = coef * (Vsolute / Vsolvent);
 
-  setHTML("resultS", `
-    <table>
-      <thead><tr><th>항목</th><th>값</th><th>단위</th></tr></thead>
-      <tbody>
-        <tr><td>예상 EC 증가</td><td>${EC.toFixed(3)}</td><td>mS/cm</td></tr>
-      </tbody>
-    </table>
-  `);
-
+  setHTML("resultS", tableSimple(ec));
   setText("metaS",
-`보정계수=${coef}
-용매=${solvent}mL
-용질=${solute}µL`);
+`보정계수 = ${coef.toFixed(3)} mS/cm
+입력 기준 = 100 mL에 100 µL 투입
+현재 조건 = ${Vsolvent.toFixed(1)} mL 용매 + ${Vsolute.toFixed(1)} µL 용질`);
+
+  saveSimple();
 }
 
 /* ===== 경험식 =====
@@ -729,8 +722,6 @@ function calcK(){
   if([V,E,dAB,tk,tn,dK_100uL,dMg_100uL,kMgRatio].some(x=>!Number.isFinite(x)||x<0)){
     setHTML("result","입력 확인");
     return;
-    // ===== Ca ppm =====
-  const Ca_ppm = 22500 * (ab_mL / V);
   }
   if(V===0){ setHTML("result","부피 0 불가"); return; }
   if(tn<=0){ setHTML("result","목표 N 비율값 0 불가"); return; }
@@ -740,13 +731,13 @@ function calcK(){
   const r = tk / tn;
 
   // 기준 환산
-  const aAB = dAB / 5;         // mS per (mL/L)
-  const aK_mLL  = dK_100uL * 10;   // mS per (mL/L stock)
-  const aMg_mLL = dMg_100uL * 10;  // mS per (mL/L stock)
+  const aAB = dAB / 5;
+  const aK_mLL  = dK_100uL * 10;
+  const aMg_mLL = dMg_100uL * 10;
 
   const doMg = (r > 1.5);
 
-  // 초기값: AB만으로 목표 EC를 맞춘다고 가정
+  // 초기값
   let ab_mL = (E * V) / aAB;
 
   let k2so4_g = 0;
@@ -759,7 +750,6 @@ function calcK(){
   let ecFromK = 0;
   let ecFromMg = 0;
 
-  // 반복 계산
   for(let i=0; i<8; i++){
     const ab_uL = ab_mL * 1000;
 
@@ -793,7 +783,9 @@ function calcK(){
   const ecFromAB = (ab_mL / V) * aAB;
   const totalEC = ecFromAB + extraEC;
 
-  setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL));
+  // A/B액의 2.25 wt% Ca를 최종 희석액 ppm으로 환산
+  // mg/L = (mL stock * g/mL * wtfrac * 1000 mg/g) / L batch
+  const ca_ppm = (ab_mL * RHO_AB * CA_WTFRAC_IN_AB * 1000) / V;
 
   let warn = "";
   if(r > 1.5){
@@ -802,12 +794,14 @@ function calcK(){
   if(extraEC > E){
     warn += `주의: K/Mg만으로 목표 EC를 초과함\n`;
   }
-setText("meta",
-`추정 총 EC = ${totalEC.toFixed(3)} mS/cm  
-AB가 담당한 EC = ${ecFromAB.toFixed(3)}  
-K+Mg가 담당한 EC = ${extraEC.toFixed(3)}  
 
-Ca 농도 ≈ ${Ca_ppm.toFixed(1)} ppm  
+  setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL));
+
+  setText("meta",
+`추정 총 EC = ${totalEC.toFixed(3)} mS/cm
+AB가 담당한 EC = ${ecFromAB.toFixed(3)}
+K+Mg가 담당한 EC = ${extraEC.toFixed(3)}
+Ca(AB 2.25%) = ${ca_ppm.toFixed(1)} ppm
 ${warn}`.trim());
 
   setText("debugBox",
@@ -826,7 +820,9 @@ MgSO4·7H2O = ${mgso4_g.toFixed(4)} g = ${mgso4_mL.toFixed(4)} mL stock
 EC from AB = ${ecFromAB.toFixed(4)}
 EC from K = ${ecFromK.toFixed(4)}
 EC from Mg = ${ecFromMg.toFixed(4)}
-Total EC = ${totalEC.toFixed(4)}`);
+Total EC = ${totalEC.toFixed(4)}
+
+Ca ppm (AB 2.25%, density 1.21) = ${ca_ppm.toFixed(4)}`);
 
   saveK();
 }
@@ -859,7 +855,9 @@ async function tryRegisterSW(){
   try{
     const reg = await navigator.serviceWorker.register("./service-worker.js", { scope: "./" });
     if(el) el.textContent = "PWA: 서비스워커 등록됨";
-    reg.addEventListener("updatefound", ()=>{ if(el) el.textContent = "PWA: 업데이트 감지(새로고침하면 적용)"; });
+    reg.addEventListener("updatefound", ()=>{
+      if(el) el.textContent = "PWA: 업데이트 감지(새로고침하면 적용)";
+    });
   }catch(e){
     if(el) el.textContent = "PWA: 서비스워커 등록 실패(경로/서버 확인)";
   }
@@ -877,7 +875,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
     $("btnCalcS")?.addEventListener("click", calcSimple);
     $("btnCalc")?.addEventListener("click", calcK);
 
-    ["VbatchS","ECtS","dE_AB_1mLTotal_100mLS"].forEach(id=>{
+    ["coefS","VsolventS","VsoluteS"].forEach(id=>{
       $(id)?.addEventListener("change", saveSimple);
     });
 
