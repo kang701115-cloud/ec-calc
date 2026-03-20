@@ -731,6 +731,109 @@ function calcK(){
   const r = tk / tn;
 
   // 기준 환산
+  const aAB = dAB / 5;         // mS per (mL/L)
+  const aK_mLL  = dK_100uL * 10;   // mS per (mL/L stock)
+  const aMg_mLL = dMg_100uL * 10;  // mS per (mL/L stock)
+
+  const doMg = (r > 1.5);
+
+  // 초기값: AB만으로 목표 EC를 맞춘다고 가정
+  let ab_mL = (E * V) / aAB;
+
+  let k2so4_g = 0;
+  let mgso4_g = 0;
+
+  let k2so4_mL = 0;
+  let mgso4_mL = 0;
+
+  let extraEC = 0;
+  let ecFromK = 0;
+  let ecFromMg = 0;
+
+  // 반복 계산
+  for(let i=0; i<8; i++){
+    const ab_uL = ab_mL * 1000;
+
+    const kElem_g_per_uL_AB = kElemPerULFromRatio(r);
+    const kElem_g = kElem_g_per_uL_AB * ab_uL;
+
+    k2so4_g = kElem_g / MASSFRAC_K_IN_K2SO4;
+    k2so4_mL = gToStockmL(k2so4_g);
+
+    if(doMg){
+      const mgElem_g = kElem_g / kMgRatio;
+      mgso4_g = mgElem_g / MASSFRAC_MG_IN_MGSO4_7H2O;
+      mgso4_mL = gToStockmL(mgso4_g);
+    }else{
+      mgso4_g = 0;
+      mgso4_mL = 0;
+    }
+
+    ecFromK  = (k2so4_mL / V) * aK_mLL;
+    ecFromMg = (mgso4_mL / V) * aMg_mLL;
+    extraEC = ecFromK + ecFromMg;
+
+    const remainingEC = Math.max(0, E - extraEC);
+    ab_mL = (remainingEC * V) / aAB;
+  }
+
+  const vAB_uL = ab_mL * 1000;
+  const vA_uL = vAB_uL / 2;
+  const vB_uL = vAB_uL / 2;
+
+  const ecFromAB = (ab_mL / V) * aAB;
+  const totalEC = ecFromAB + extraEC;
+
+  // Ca ppm 추가 (A/B액에 2.25 wt% Ca, 밀도 1.21 g/mL 가정)
+  const ca_ppm = (ab_mL * RHO_AB * 0.0225 * 1000) / V;
+
+  setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL));
+
+  let warn = "";
+  if(r > 1.5){
+    warn += `N:K=${tn}:${tk} → Mg 자동보정 적용\n`;
+  }
+  if(extraEC > E){
+    warn += `주의: K/Mg만으로 목표 EC를 초과함\n`;
+  }
+
+  setText("meta",
+`추정 총 EC = ${totalEC.toFixed(3)} mS/cm
+AB가 담당한 EC = ${ecFromAB.toFixed(3)}
+K+Mg가 담당한 EC = ${extraEC.toFixed(3)}
+Ca(AB 2.25%) = ${ca_ppm.toFixed(1)} ppm
+${warn}`.trim());
+
+  setText("debugBox",
+`r=tK/tN = ${r.toFixed(4)}
+Mg auto = ${doMg}
+aAB = ${aAB.toFixed(6)} [mS per (mL/L)]
+aK = ${aK_mLL.toFixed(6)} [mS per (mL/L stock)]
+aMg = ${aMg_mLL.toFixed(6)} [mS per (mL/L stock)]
+
+AB total = ${ab_mL.toFixed(4)} mL
+AB total = ${vAB_uL.toFixed(2)} µL
+
+K2SO4 = ${k2so4_g.toFixed(4)} g = ${k2so4_mL.toFixed(4)} mL stock
+MgSO4·7H2O = ${mgso4_g.toFixed(4)} g = ${mgso4_mL.toFixed(4)} mL stock
+
+EC from AB = ${ecFromAB.toFixed(4)}
+EC from K = ${ecFromK.toFixed(4)}
+EC from Mg = ${ecFromMg.toFixed(4)}
+Total EC = ${totalEC.toFixed(4)}
+
+Ca ppm (AB 2.25%, density 1.21) = ${ca_ppm.toFixed(4)}`);
+
+  saveK();
+}
+  if(V===0){ setHTML("result","부피 0 불가"); return; }
+  if(tn<=0){ setHTML("result","목표 N 비율값 0 불가"); return; }
+  if(kMgRatio<=0){ setHTML("result","K:Mg 비율 0 불가"); return; }
+  if(dAB===0 || dK_100uL===0 || dMg_100uL===0){ setHTML("result","EC증분 0 불가"); return; }
+
+  const r = tk / tn;
+
+  // 기준 환산
   const aAB = dAB / 5;
   const aK_mLL  = dK_100uL * 10;
   const aMg_mLL = dMg_100uL * 10;
