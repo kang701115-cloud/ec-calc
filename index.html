@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액 계산기</title>
+<title>양액계산기</title>
 
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#007BFF">
@@ -16,9 +16,7 @@
   --brand-dark:#0056b3;
   --card-w:760px;
 }
-
 *{box-sizing:border-box}
-
 body{
   font-family:Arial,sans-serif;
   background:#f7f8fa;
@@ -26,19 +24,15 @@ body{
   padding:24px;
   text-align:center;
 }
-
 h1{
   color:var(--brand);
   font-size:2.1rem;
   margin:0 0 12px;
 }
-
 .wrap{
   max-width:var(--card-w);
   margin:0 auto;
 }
-
-/* 카드 */
 .card{
   background:#fff;
   padding:20px;
@@ -48,13 +42,11 @@ h1{
   text-align:left;
   font-size:1.06rem;
 }
-
 .card h2{
   margin:0 0 10px;
   font-size:1.22rem;
   color:#222;
 }
-
 .card-head{
   display:flex;
   justify-content:space-between;
@@ -62,22 +54,17 @@ h1{
   gap:10px;
   flex-wrap:wrap;
 }
-
-/* ===== 입력 레이아웃 ===== */
 .row{
   display:flex;
   gap:12px;
   flex-wrap:wrap;
   align-items:stretch;
 }
-
 .row > div{
   flex:1 1 220px;
   display:flex;
   flex-direction:column;
 }
-
-/* 🔥 label 범위 제한 (핵심) */
 .row label{
   display:flex;
   align-items:flex-end;
@@ -89,7 +76,6 @@ h1{
   white-space:normal;
   word-break:keep-all;
 }
-
 input{
   width:100%;
   padding:12px;
@@ -99,8 +85,6 @@ input{
   background:#fff;
   height:48px;
 }
-
-/* 버튼 */
 .btn{
   margin-top:16px;
   padding:13px 16px;
@@ -112,35 +96,26 @@ input{
   cursor:pointer;
   font-size:1.08rem;
 }
-
-.btn:hover{
-  background:var(--brand-dark);
-}
-
-/* 결과 */
+.btn:hover{ background:var(--brand-dark); }
 .result{
   margin-top:14px;
   font-weight:700;
   color:#222;
   font-size:1.06rem;
 }
-
 .meta{
   font-size:.96rem;
   color:#333;
   white-space:pre-line;
   margin-top:10px;
 }
-
 .footer{
   font-size:.9rem;
   color:#666;
   margin-top:16px;
 }
-
 .hidden{display:none}
 
-/* ===== 상단 토글 ===== */
 .control-wrap{
   display:flex;
   justify-content:flex-end;
@@ -150,7 +125,6 @@ input{
   max-width:var(--card-w);
   padding-right:10px;
 }
-
 .float-box{
   display:flex;
   align-items:center;
@@ -162,7 +136,6 @@ input{
   padding:6px 10px;
   box-shadow:0 4px 10px rgba(0,0,0,.06);
 }
-
 .mode-chip{
   font-weight:700;
   color:#274690;
@@ -171,31 +144,37 @@ input{
   border-radius:999px;
   font-size:.86rem;
 }
+.mode-chip.inactive{ opacity:.55; }
 
-.mode-chip.inactive{
-  opacity:.55;
+.icon-btn{
+  border:none;
+  width:36px;
+  height:36px;
+  border-radius:999px;
+  background:#eef6ff;
+  color:#274690;
+  font-weight:900;
+  font-size:1rem;
+  cursor:pointer;
+  box-shadow:0 4px 10px rgba(0,0,0,.06);
 }
+.icon-btn:hover{ background:#dfeeff; }
 
-/* ===== 토글 (완전 안정판) ===== */
 .switch{
   position:relative;
   display:inline-block;
   width:36px;
   height:20px;
   flex:0 0 auto;
-
-  /* label 영향 제거 */
   margin:0;
   min-height:0;
   line-height:1;
 }
-
 .switch input{
   opacity:0;
   width:0;
   height:0;
 }
-
 .slider{
   position:absolute;
   left:0;
@@ -206,7 +185,6 @@ input{
   border-radius:999px;
   transition:.2s ease;
 }
-
 .slider:before{
   content:"";
   position:absolute;
@@ -219,43 +197,28 @@ input{
   box-shadow:0 1px 3px rgba(0,0,0,.25);
   transition:.2s ease;
 }
+.switch input:checked + .slider{ background:#8ab4f8; }
+.switch input:checked + .slider:before{ transform:translateX(16px); }
 
-.switch input:checked + .slider{
-  background:#8ab4f8;
-}
-
-.switch input:checked + .slider:before{
-  transform:translateX(16px);
-}
-
-/* ===== 테이블 ===== */
 table{
   width:100%;
   border-collapse:collapse;
   margin-top:10px;
   font-size:1rem;
 }
-
 th,td{
   border:1px solid #eee;
   padding:10px 8px;
   text-align:right;
 }
-
 th{
   background:#f3f6ff;
   color:#123;
 }
+td:first-child, th:first-child{ text-align:left; }
+td:last-child, th:last-child{ text-align:left; }
 
-td:first-child,
-th:first-child{ text-align:left }
-
-td:last-child,
-th:last-child{ text-align:left }
-
-/* ===== details ===== */
-details{margin-top:10px}
-
+details{ margin-top:10px; }
 details > summary{
   cursor:pointer;
   user-select:none;
@@ -266,7 +229,6 @@ details > summary{
   color:#274690;
   font-weight:700;
 }
-
 .details-body{
   padding:10px 2px;
   font-size:.98rem;
@@ -274,7 +236,6 @@ details > summary{
   white-space:pre-line;
 }
 
-/* ===== 모달 ===== */
 .modal{
   position:fixed;
   inset:0;
@@ -285,18 +246,15 @@ details > summary{
   padding:18px;
   z-index:999;
 }
-
-.modal.open{display:flex}
-
+.modal.open{ display:flex; }
 .modal-card{
-  width:min(640px,100%);
+  width:min(680px,100%);
   background:#fff;
   border-radius:16px;
   box-shadow:0 10px 30px rgba(0,0,0,.18);
   padding:14px;
   text-align:left;
 }
-
 .modal-head{
   display:flex;
   align-items:center;
@@ -305,13 +263,11 @@ details > summary{
   gap:10px;
   flex-wrap:wrap;
 }
-
 .modal-title{
   font-weight:800;
   color:#123;
   font-size:1.08rem;
 }
-
 .modal-x{
   border:none;
   background:#f2f4f8;
@@ -320,13 +276,11 @@ details > summary{
   cursor:pointer;
   font-weight:800;
 }
-
 .help-body{
   padding:6px 8px 10px;
   color:#222;
   line-height:1.6;
 }
-
 .help-box{
   background:#f8fbff;
   border:1px solid #e1ebff;
@@ -334,23 +288,18 @@ details > summary{
   padding:10px 12px;
   margin-top:10px;
 }
-
 .help-box h3{
   margin:0 0 8px;
   font-size:1rem;
   color:#274690;
 }
-
-.help-table td,
-.help-table th{
+.help-table td,.help-table th{
   font-size:.95rem;
 }
 
-/* ===== 모바일 ===== */
 @media (max-width:480px){
-  body{padding:14px}
-  table{font-size:0.92rem}
-
+  body{ padding:14px; }
+  table{ font-size:0.92rem; }
   .control-wrap{
     justify-content:center;
     padding-right:0;
@@ -358,18 +307,16 @@ details > summary{
   }
 }
 </style>
-
 </head>
 
 <body>
-
 <h1>양액 배합 계산기</h1>
 
 <div class="control-wrap">
   <div class="float-box" title="모드 전환">
     <span id="chipSimple" class="mode-chip">양액만</span>
     <label class="switch"><input id="modeSwitch" type="checkbox"/><span class="slider"></span></label>
-    <span id="chipK" class="mode-chip inactive">K+Mg</span>
+    <span id="chipK" class="mode-chip inactive">K+Mg+Ca</span>
   </div>
   <div class="float-box" title="표시 단위 전환">
     <span class="mode-chip" id="unitLabelLeft">µL</span>
@@ -378,7 +325,6 @@ details > summary{
   </div>
 </div>
 
-<!-- 도움말 모달 -->
 <div class="modal" id="helpModal" aria-hidden="true">
   <div class="modal-card" role="dialog" aria-modal="true" aria-label="도움말">
     <div class="modal-head">
@@ -403,17 +349,21 @@ details > summary{
 
       <div class="help-box">
         <h3>입력 팁</h3>
-        - 목표 N은 보통 1로 두고, 목표 K에 비율값을 넣으면 됨. 예: N:K = 1:1.6 이면 N=1, K=1.6<br>
-        - K가 많아질수록 Mg 결핍 위험이 커져서 K:Mg 비를 같이 보는 게 좋음.<br>
-        - 이 계산기는 절대 ppm 계산기가 아니라, 현재 네 실험값 기반의 실전 보정 계산기임.
+        - 목표 N, K는 비율값 기준 입력. 기본적으로 1.0 = N 100 ppm 기준으로 해석함.<br>
+        - AB 합액의 Ca는 중량비 2.25%로 가정함.<br>
+        - K가 많아질수록 Mg 결핍 위험이 커져서 K:Mg 비를 같이 맞춤.<br>
+        - 총 Ca가 180 ppm 미만이면 Ca(NO₃)₂·4H₂O를 자동 추가함.<br>
+        - Ca(NO₃)₂ 추가로 들어간 질산태 N은 N:K 계산에 반영됨.
       </div>
 
       <div class="help-box">
         <h3>현재 계산 로직 요약</h3>
-        1. K/Mg가 차지하는 EC를 먼저 추정함<br>
-        2. 남는 EC를 AB가 채움<br>
-        3. 이걸 여러 번 반복해서 수렴시킴<br>
-        → 예전보다 AB 종속 느낌을 줄인 구조
+        1. 목표 EC와 목표 N:K를 기준으로 반복 계산 시작<br>
+        2. K 필요량 추정 → Mg 자동 보정<br>
+        3. AB 안의 Ca 계산<br>
+        4. Ca가 180 ppm 미만이면 Ca(NO₃)₂ 추가<br>
+        5. Ca(NO₃)₂에서 늘어난 질산태 N을 반영해 K 수요 다시 보정<br>
+        6. 남는 EC를 AB가 채움
       </div>
     </div>
   </div>
@@ -421,7 +371,6 @@ details > summary{
 
 <div class="wrap">
 
-  <!-- 양액만 -->
   <div class="card" id="cardSimple">
     <h2>양액만</h2>
     <div class="row">
@@ -445,10 +394,9 @@ details > summary{
     <div class="meta" id="metaS"></div>
   </div>
 
-  <!-- K+Mg 자동 -->
   <div class="card hidden" id="cardK">
     <div class="card-head">
-      <h2 style="margin:0;">K+Mg 보정 모드</h2>
+      <h2 style="margin:0;">K+Mg+Ca 보정 모드</h2>
       <button class="icon-btn" id="btnHelp" title="권장 EC / N:K 보기">i</button>
     </div>
 
@@ -488,8 +436,23 @@ details > summary{
         <input type="number" id="dE_Mgstock_1mL_100mL" step="0.01" min="0" placeholder="예: 5.00">
       </div>
       <div>
+        <label for="dE_CaNO3_1mL_100mL">Ca(NO₃)₂·4H₂O: 100 mL 물에 0.5 g → EC 증가 (mS/cm)</label>
+        <input type="number" id="dE_CaNO3_1mL_100mL" step="0.01" min="0" placeholder="예: 7.50">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
         <label for="KMgRatio">K:Mg 목표비 (질량비)</label>
         <input type="number" id="KMgRatio" step="0.1" min="0.1" value="4.0">
+      </div>
+      <div>
+        <label for="targetCaPpm">최소 Ca 목표 (ppm)</label>
+        <input type="number" id="targetCaPpm" step="1" min="0" value="180">
+      </div>
+      <div>
+        <label for="NBasisPpm">N 기준 1.0 = 몇 ppm</label>
+        <input type="number" id="NBasisPpm" step="1" min="1" value="100">
       </div>
     </div>
 
@@ -539,7 +502,16 @@ const SafeStorage = (() => {
 
 /* ===== 상수 ===== */
 const RHO_AB = 1.21;
-const ATOMIC = { K:39.0983, Mg:24.305, S:32.065, O:15.999, H:1.008 };
+const CA_WTFRAC_IN_AB = 0.0225; // AB 합액 중 Ca 2.25 wt%
+const ATOMIC = {
+  K:39.0983,
+  Mg:24.305,
+  Ca:40.078,
+  N:14.007,
+  S:32.065,
+  O:15.999,
+  H:1.008
+};
 
 // K2SO4
 const M_K2SO4 = 2*ATOMIC.K + ATOMIC.S + 4*ATOMIC.O;
@@ -550,11 +522,19 @@ const M_H2O = 2*ATOMIC.H + ATOMIC.O;
 const M_MGSO4_7H2O = (ATOMIC.Mg + ATOMIC.S + 4*ATOMIC.O) + 7*M_H2O;
 const MASSFRAC_MG_IN_MGSO4_7H2O = ATOMIC.Mg / M_MGSO4_7H2O;
 
+// Ca(NO3)2·4H2O
+const M_CANO3_2_4H2O =
+  ATOMIC.Ca +
+  2*(ATOMIC.N + 3*ATOMIC.O) +
+  4*M_H2O;
+const MASSFRAC_CA_IN_CANO3 = ATOMIC.Ca / M_CANO3_2_4H2O;
+const MASSFRAC_N_IN_CANO3  = (2*ATOMIC.N) / M_CANO3_2_4H2O;
+
 /* ===== storage KEY ===== */
-const KEY_SIMPLE="nutri_calc_simple_v12";
-const KEY_KMODE ="nutri_calc_kmode_v12";
-const KEY_MODE  ="nutri_calc_mode_v12";
-const KEY_UNIT  ="nutri_calc_unit_v12";
+const KEY_SIMPLE="nutri_calc_simple_v13";
+const KEY_KMODE ="nutri_calc_kmode_v13";
+const KEY_MODE  ="nutri_calc_mode_v13";
+const KEY_UNIT  ="nutri_calc_unit_v13";
 
 /* ===== DOM 유틸 ===== */
 function $(id){ return document.getElementById(id); }
@@ -634,7 +614,10 @@ function saveK(){
     tN:getNum("tN"),
     dE_Kstock_1mL_100mL:getNum("dE_Kstock_1mL_100mL"),
     dE_Mgstock_1mL_100mL:getNum("dE_Mgstock_1mL_100mL"),
-    KMgRatio:getNum("KMgRatio")
+    dE_CaNO3_1mL_100mL:getNum("dE_CaNO3_1mL_100mL"),
+    KMgRatio:getNum("KMgRatio"),
+    targetCaPpm:getNum("targetCaPpm"),
+    NBasisPpm:getNum("NBasisPpm")
   };
   SafeStorage.setItem(KEY_KMODE,JSON.stringify(d));
 }
@@ -656,7 +639,7 @@ function tableSimple(vA_uL, vB_uL){
     </tbody>
   </table>`;
 }
-function tableK(vA_uL, vB_uL, k2so4_g, mgso4_g){
+function tableK(vA_uL, vB_uL, k2so4_g, mgso4_g, cano3_g){
   const u = unitName();
   return `
   <table>
@@ -666,6 +649,7 @@ function tableK(vA_uL, vB_uL, k2so4_g, mgso4_g){
       <tr><td>B액(10wt%)</td><td>${cellVol(vB_uL)}</td><td>${u}</td></tr>
       <tr><td>K₂SO₄</td><td>${k2so4_g.toFixed(3)}</td><td>g</td></tr>
       <tr><td>MgSO₄·7H₂O</td><td>${mgso4_g.toFixed(3)}</td><td>g</td></tr>
+      <tr><td>Ca(NO₃)₂·4H₂O</td><td>${cano3_g.toFixed(3)}</td><td>g</td></tr>
     </tbody>
   </table>`;
 }
@@ -680,7 +664,6 @@ function calcSimple(){
   if(V===0){ setHTML("resultS","부피 0 불가"); return; }
   if(dAB===0){ setHTML("resultS","AB EC증분 0 불가"); return; }
 
-  // 100mL 물에 AB 총 0.5mL -> 5mL/L
   const aAB = dAB / 5;
   const vAB_mL = (E * V) / aAB;
   const vA_uL = (vAB_mL/2) * 1000;
@@ -691,14 +674,23 @@ function calcSimple(){
 }
 
 /* ===== 경험식 =====
-   목표 N:K 비율 r에 따라 AB 대비 추가 K 필요량을 추정하는 경험식.
-   절대 ppm 계산이 아니라, 현재 네 실험/운용값에 맞춘 보정용.
+   목표 비율에 따라 AB 대비 추가 K 필요량을 추정하는 경험식.
+   절대 화학량론 계산이 아니라 실전 보정용.
 */
 function kElemPerULFromRatio(r){
   return Math.max(0, RHO_AB * (0.0575*r - 0.0425) / 1000);
 }
 
-/* ===== 계산(K+Mg 보정) ===== */
+/* ===== 보조 계산 ===== */
+function calcCaFromAB_g(ab_uL){
+  const abSolution_g = ab_uL * RHO_AB / 1000;
+  return abSolution_g * CA_WTFRAC_IN_AB;
+}
+function gToPpm(g, V_L){
+  return (g * 1000) / V_L;
+}
+
+/* ===== 계산(K+Mg+Ca 보정) ===== */
 function calcK(){
   const V=getNum("Vbatch"),
         E=getNum("ECt"),
@@ -707,59 +699,94 @@ function calcK(){
         tn=getNum("tN"),
         dK_0p5g=getNum("dE_Kstock_1mL_100mL"),
         dMg_0p5g=getNum("dE_Mgstock_1mL_100mL"),
-        kMgRatio=getNum("KMgRatio");
+        dCa_0p5g=getNum("dE_CaNO3_1mL_100mL"),
+        kMgRatio=getNum("KMgRatio"),
+        targetCaPpm=getNum("targetCaPpm"),
+        nBasisPpm=getNum("NBasisPpm");
 
   setHTML("result","");
   setText("meta","");
   setText("debugBox","");
 
-  if([V,E,dAB,tk,tn,dK_0p5g,dMg_0p5g,kMgRatio].some(x=>!Number.isFinite(x)||x<0)){
+  if([V,E,dAB,tk,tn,dK_0p5g,dMg_0p5g,dCa_0p5g,kMgRatio,targetCaPpm,nBasisPpm].some(x=>!Number.isFinite(x)||x<0)){
     setHTML("result","입력 확인");
     return;
   }
   if(V===0){ setHTML("result","부피 0 불가"); return; }
   if(tn<=0){ setHTML("result","목표 N 비율값 0 불가"); return; }
   if(kMgRatio<=0){ setHTML("result","K:Mg 비율 0 불가"); return; }
-  if(dAB===0 || dK_0p5g===0 || dMg_0p5g===0){ setHTML("result","EC증분 0 불가"); return; }
+  if(nBasisPpm<=0){ setHTML("result","N 기준 ppm 0 불가"); return; }
+  if(dAB===0 || dK_0p5g===0 || dMg_0p5g===0 || dCa_0p5g===0){ setHTML("result","EC증분 0 불가"); return; }
 
-  const r = tk / tn;
-
-  // 기준 환산
   const aAB = dAB / 5;         // mS per (mL/L)
   const aK_gL  = dK_0p5g / 5;  // mS per (g/L)
   const aMg_gL = dMg_0p5g / 5; // mS per (g/L)
+  const aCa_gL = dCa_0p5g / 5; // mS per (g/L)
 
-  const doMg = (r > 1.5);
+  const targetNppmBase = tn * nBasisPpm;
+  const targetKppmBase = tk * nBasisPpm;
+  const targetRatioInput = tk / tn;
 
-  // 초기값: AB만으로 목표 EC를 맞춘다고 가정
   let ab_mL = (E * V) / aAB;
 
   let k2so4_g = 0;
-  let mgso4_7h2o_g = 0;
+  let mgso4_g = 0;
+  let cano3_g = 0;
+
   let extraEC = 0;
+  let ecFromK = 0;
+  let ecFromMg = 0;
+  let ecFromCa = 0;
 
-  // 반복 계산:
-  // 1) 현재 AB량 기준으로 K 필요량 추정
-  // 2) K로부터 Mg 필요량 계산
-  // 3) K+Mg가 먹는 EC 계산
-  // 4) 남은 EC를 AB가 채우도록 재계산
-  for(let i=0; i<8; i++){
+  let caFromAB_g = 0;
+  let caFromAB_ppm = 0;
+  let caFromCaNO3_ppm = 0;
+  let totalCaPpm = 0;
+
+  let extraNppm = 0;
+  let effectiveNppm = targetNppmBase;
+  let effectiveRatio = targetRatioInput;
+  let doMg = false;
+
+  for(let i=0; i<10; i++){
     const ab_uL = ab_mL * 1000;
-    const kElem_g_per_uL_AB = kElemPerULFromRatio(r);
-    const kElem_g = kElem_g_per_uL_AB * ab_uL;
 
+    // AB가 공급하는 Ca 계산
+    caFromAB_g = calcCaFromAB_g(ab_uL);
+    caFromAB_ppm = gToPpm(caFromAB_g, V);
+
+    // Ca 최소치 맞추기
+    const targetCa_g = targetCaPpm * V / 1000;
+    const lackingCa_g = Math.max(0, targetCa_g - caFromAB_g);
+    cano3_g = lackingCa_g / MASSFRAC_CA_IN_CANO3;
+
+    caFromCaNO3_ppm = gToPpm(cano3_g * MASSFRAC_CA_IN_CANO3, V);
+    totalCaPpm = caFromAB_ppm + caFromCaNO3_ppm;
+
+    // CaNO3로 들어온 N을 N:K에 반영
+    extraNppm = gToPpm(cano3_g * MASSFRAC_N_IN_CANO3, V);
+    effectiveNppm = targetNppmBase + extraNppm;
+
+    // K 목표는 유지, N이 늘어난 만큼 실제 ratio는 낮아짐
+    effectiveRatio = targetKppmBase / Math.max(1e-9, effectiveNppm);
+
+    // ratio 기반 K 보정
+    const kElem_g_per_uL_AB = kElemPerULFromRatio(effectiveRatio);
+    const kElem_g = kElem_g_per_uL_AB * ab_uL;
     k2so4_g = kElem_g / MASSFRAC_K_IN_K2SO4;
 
+    doMg = (effectiveRatio > 1.5);
     if(doMg){
       const mgElem_g = kElem_g / kMgRatio;
-      mgso4_7h2o_g = mgElem_g / MASSFRAC_MG_IN_MGSO4_7H2O;
+      mgso4_g = mgElem_g / MASSFRAC_MG_IN_MGSO4_7H2O;
     }else{
-      mgso4_7h2o_g = 0;
+      mgso4_g = 0;
     }
 
-    const ecFromK  = (k2so4_g / V) * aK_gL;
-    const ecFromMg = (mgso4_7h2o_g / V) * aMg_gL;
-    extraEC = ecFromK + ecFromMg;
+    ecFromK  = (k2so4_g / V) * aK_gL;
+    ecFromMg = (mgso4_g / V) * aMg_gL;
+    ecFromCa = (cano3_g / V) * aCa_gL;
+    extraEC = ecFromK + ecFromMg + ecFromCa;
 
     const remainingEC = Math.max(0, E - extraEC);
     ab_mL = (remainingEC * V) / aAB;
@@ -772,35 +799,66 @@ function calcK(){
   const ecFromAB = (ab_mL / V) * aAB;
   const totalEC = ecFromAB + extraEC;
 
-  setHTML("result", tableK(vA_uL, vB_uL, k2so4_g, mgso4_7h2o_g));
+  setHTML("result", tableK(vA_uL, vB_uL, k2so4_g, mgso4_g, cano3_g));
 
   let warn = "";
-  if(r > 1.5){
-    warn += `N:K=${tn}:${tk} → Mg 자동보정 적용\n`;
+  if(doMg){
+    warn += `유효 N:K = 1:${(effectiveRatio).toFixed(2)} → Mg 자동보정 적용\n`;
+  }
+  if(totalCaPpm < targetCaPpm - 0.5){
+    warn += `주의: Ca가 목표 ${targetCaPpm} ppm에 못 미침\n`;
   }
   if(extraEC > E){
-    warn += `주의: K/Mg만으로 목표 EC를 초과함\n`;
+    warn += `주의: K/Mg/Ca만으로 목표 EC를 초과함\n`;
   }
 
   setText("meta",
 `추정 총 EC = ${totalEC.toFixed(3)} mS/cm
 AB가 담당한 EC = ${ecFromAB.toFixed(3)}
-K+Mg가 담당한 EC = ${extraEC.toFixed(3)}
+K+Mg+Ca가 담당한 EC = ${extraEC.toFixed(3)}
+
+Ca(AB) = ${caFromAB_ppm.toFixed(1)} ppm
+Ca(CaNO₃) = ${caFromCaNO3_ppm.toFixed(1)} ppm
+Ca(총합) = ${totalCaPpm.toFixed(1)} ppm
+
+N 기준 = ${targetNppmBase.toFixed(1)} ppm
+CaNO₃로 추가된 질산태 N = ${extraNppm.toFixed(1)} ppm
+유효 N = ${effectiveNppm.toFixed(1)} ppm
+유효 K:N = ${(targetKppmBase / effectiveNppm).toFixed(2)}:1  (입력 기준 ${targetRatioInput.toFixed(2)}:1 아님, CaNO₃ N 반영됨)
+
 ${warn}`.trim());
 
   setText("debugBox",
-`r=tK/tN = ${r.toFixed(4)}
-Mg auto = ${doMg}
+`입력 목표 ratio = tK/tN = ${targetRatioInput.toFixed(4)}
+N 기준 1.0 = ${nBasisPpm.toFixed(1)} ppm
+target N ppm(base) = ${targetNppmBase.toFixed(4)}
+target K ppm(base) = ${targetKppmBase.toFixed(4)}
+
+effective N ppm = ${effectiveNppm.toFixed(4)}
+extra N ppm from Ca(NO3)2 = ${extraNppm.toFixed(4)}
+effective K/N ratio = ${(targetKppmBase / effectiveNppm).toFixed(4)}
+
 aAB = ${aAB.toFixed(6)} [mS per (mL/L)]
-aK = ${aK_gL.toFixed(6)} [mS per (g/L)]
+aK  = ${aK_gL.toFixed(6)} [mS per (g/L)]
 aMg = ${aMg_gL.toFixed(6)} [mS per (g/L)]
+aCa = ${aCa_gL.toFixed(6)} [mS per (g/L)]
+
 AB total = ${ab_mL.toFixed(4)} mL
 AB total = ${vAB_uL.toFixed(2)} µL
+
 K2SO4 = ${k2so4_g.toFixed(4)} g
-MgSO4·7H2O = ${mgso4_7h2o_g.toFixed(4)} g
+MgSO4·7H2O = ${mgso4_g.toFixed(4)} g
+Ca(NO3)2·4H2O = ${cano3_g.toFixed(4)} g
+
 EC from AB = ${ecFromAB.toFixed(4)}
-EC from K+Mg = ${extraEC.toFixed(4)}
-Total EC = ${totalEC.toFixed(4)}`);
+EC from K   = ${ecFromK.toFixed(4)}
+EC from Mg  = ${ecFromMg.toFixed(4)}
+EC from Ca  = ${ecFromCa.toFixed(4)}
+Total EC = ${totalEC.toFixed(4)}
+
+Ca from AB = ${caFromAB_ppm.toFixed(4)} ppm
+Ca from CaNO3 = ${caFromCaNO3_ppm.toFixed(4)} ppm
+Ca total = ${totalCaPpm.toFixed(4)} ppm`);
 
   saveK();
 }
@@ -855,7 +913,11 @@ document.addEventListener("DOMContentLoaded", ()=>{
       $(id)?.addEventListener("change", saveSimple);
     });
 
-    ["Vbatch","ECt","dE_AB_1mLTotal_100mL","tK","tN","dE_Kstock_1mL_100mL","dE_Mgstock_1mL_100mL","KMgRatio"].forEach(id=>{
+    [
+      "Vbatch","ECt","dE_AB_1mLTotal_100mL","tK","tN",
+      "dE_Kstock_1mL_100mL","dE_Mgstock_1mL_100mL","dE_CaNO3_1mL_100mL",
+      "KMgRatio","targetCaPpm","NBasisPpm"
+    ].forEach(id=>{
       $(id)?.addEventListener("change", saveK);
     });
 
