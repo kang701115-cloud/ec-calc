@@ -326,6 +326,37 @@ input {
   height: 48px;
   margin-top: 0;
 }
+  .switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;   /* 🔥 키움 */
+  height: 20px;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background: #cfe2ff;
+  border-radius: 999px;
+  transition: 0.2s;
+}
+
+.slider:before {
+  content: "";
+  position: absolute;
+  width: 16px;   /* 🔥 원 크기 키움 */
+  height: 16px;
+  left: 2px;
+  top: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+/* 🔥 이동 거리 정확히 맞춤 */
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
 </style>
 </head>
 
