@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액계산기</title>
+<title>양액 계산기</title>
 
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#007BFF">
@@ -388,10 +388,10 @@ details > summary{
 
       <div class="help-box">
         <h3>현재 계산 로직 요약</h3>
-        1. 목표 N:K 비율로 K 필요량을 추정함<br>
-        2. K가 차지하는 EC를 먼저 계산함<br>
-        3. K가 많으면 K:Mg 목표비 기준으로 Mg 자동 보정<br>
-        4. 남는 EC를 AB가 채움
+        1. 목표 N:K 비율이 1:1보다 클수록 K 보정량을 늘림<br>
+        2. K가 많으면 K:Mg 목표비 기준으로 Mg를 자동 보정함<br>
+        3. K/Mg가 차지한 EC를 제외한 나머지를 AB가 채움<br>
+        4. AB 2.25% Ca를 최종 ppm으로 같이 표시함
       </div>
     </div>
   </div>
@@ -518,28 +518,11 @@ const RHO_AB = 1.21;
 const STOCK_WTFRAC = 0.10;
 const CA_WTFRAC_IN_AB = 0.0225;
 
-const ATOMIC = {
-  K:39.0983,
-  Mg:24.305,
-  S:32.065,
-  O:15.999,
-  H:1.008
-};
-
-// K2SO4
-const M_K2SO4 = 2*ATOMIC.K + ATOMIC.S + 4*ATOMIC.O;
-const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4;
-
-// MgSO4·7H2O
-const M_H2O = 2*ATOMIC.H + ATOMIC.O;
-const M_MGSO4_7H2O = (ATOMIC.Mg + ATOMIC.S + 4*ATOMIC.O) + 7*M_H2O;
-const MASSFRAC_MG_IN_MGSO4_7H2O = ATOMIC.Mg / M_MGSO4_7H2O;
-
 /* ===== storage KEY ===== */
-const KEY_SIMPLE="nutri_calc_simple_v19";
-const KEY_KMODE ="nutri_calc_kmode_v19";
-const KEY_MODE  ="nutri_calc_mode_v19";
-const KEY_UNIT  ="nutri_calc_unit_v19";
+const KEY_SIMPLE="nutri_calc_simple_v20";
+const KEY_KMODE ="nutri_calc_kmode_v20";
+const KEY_MODE  ="nutri_calc_mode_v20";
+const KEY_UNIT  ="nutri_calc_unit_v20";
 
 /* ===== DOM 유틸 ===== */
 function $(id){ return document.getElementById(id); }
@@ -682,17 +665,10 @@ function calcSimple(){
   saveSimple();
 }
 
-/* ===== 경험식 ===== */
-function kElemPerULFromRatio(r){
-  return Math.max(0, RHO_AB * (0.0575*r - 0.0425) / 1000);
-}
-
-/* ===== 보조 ===== */
-function gToStockmL(g){
-  return g / STOCK_WTFRAC;
-}
-
-/* ===== 계산(K+Mg) ===== */
+/* ===== 계산(K+Mg) =====
+   기존 경험식이 과도하게 커져서 0으로 수렴하던 문제를 피하려고
+   비율 기반 EC 배분 방식으로 안정화한 보정 로직.
+*/
 function calcK(){
   const V=getNum("Vbatch"),
         E=getNum("ECt"),
@@ -717,48 +693,36 @@ function calcK(){
   if(dAB===0 || dK_100uL===0 || dMg_100uL===0){ setHTML("result","EC증분 0 불가"); return; }
 
   const r = tk / tn;
-
-  const aAB = dAB / 5;
-  const aK_mLL  = dK_100uL * 10;
+  const aAB = dAB / 5;          // mS per (mL/L)
+  const aK_mLL = dK_100uL * 10; // mS per (mL/L stock)
   const aMg_mLL = dMg_100uL * 10;
 
-  const doMg = (r > 1.5);
+  const doMg = (r >= 1.5);
 
-  let ab_mL = (E * V) / aAB;
+  // 비율 편차가 커질수록 K가 더 많은 EC를 담당하게 함
+  const ratioDelta = Math.max(0, r - 1);
+  let ecFromK = E * ratioDelta * 0.4;      // 보정 강도
+  ecFromK = Math.min(ecFromK, E * 0.60);   // 과도한 잠식 방지
 
-  let k2so4_g = 0;
-  let mgso4_g = 0;
-  let k2so4_mL = 0;
-  let mgso4_mL = 0;
-  let extraEC = 0;
-  let ecFromK = 0;
-  let ecFromMg = 0;
+  let ecFromMg = doMg ? (ecFromK / kMgRatio) : 0;
+  let extraEC = ecFromK + ecFromMg;
 
-  for(let i=0; i<8; i++){
-    const ab_uL = ab_mL * 1000;
-
-    const kElem_g_per_uL_AB = kElemPerULFromRatio(r);
-    const kElem_g = kElem_g_per_uL_AB * ab_uL;
-
-    k2so4_g = kElem_g / MASSFRAC_K_IN_K2SO4;
-    k2so4_mL = gToStockmL(k2so4_g);
-
-    if(doMg){
-      const mgElem_g = kElem_g / kMgRatio;
-      mgso4_g = mgElem_g / MASSFRAC_MG_IN_MGSO4_7H2O;
-      mgso4_mL = gToStockmL(mgso4_g);
-    }else{
-      mgso4_g = 0;
-      mgso4_mL = 0;
-    }
-
-    ecFromK  = (k2so4_mL / V) * aK_mLL;
-    ecFromMg = (mgso4_mL / V) * aMg_mLL;
+  // K+Mg가 전체 목표 EC를 먹어버리지 않게 제한
+  if(extraEC > E * 0.85){
+    const scale = (E * 0.85) / extraEC;
+    ecFromK *= scale;
+    ecFromMg *= scale;
     extraEC = ecFromK + ecFromMg;
-
-    const remainingEC = Math.max(0, E - extraEC);
-    ab_mL = (remainingEC * V) / aAB;
   }
+
+  const remainingEC = Math.max(0, E - extraEC);
+  const ab_mL = (remainingEC * V) / aAB;
+
+  const k2so4_mL = (ecFromK / aK_mLL) * V;
+  const mgso4_mL = (ecFromMg / aMg_mLL) * V;
+
+  const k2so4_g = k2so4_mL * STOCK_WTFRAC;
+  const mgso4_g = mgso4_mL * STOCK_WTFRAC;
 
   const vAB_uL = ab_mL * 1000;
   const vA_uL = vAB_uL / 2;
@@ -773,11 +737,11 @@ function calcK(){
   setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL));
 
   let warn = "";
-  if(r > 1.5){
+  if(doMg){
     warn += `N:K=${tn}:${tk} → Mg 자동보정 적용\n`;
   }
-  if(extraEC > E){
-    warn += `주의: K/Mg만으로 목표 EC를 초과함\n`;
+  if(extraEC > E * 0.6){
+    warn += `주의: K/Mg 비중이 큼\n`;
   }
 
   setText("meta",
@@ -790,6 +754,8 @@ ${warn}`.trim());
   setText("debugBox",
 `r=tK/tN = ${r.toFixed(4)}
 Mg auto = ${doMg}
+ratioDelta = ${ratioDelta.toFixed(4)}
+
 aAB = ${aAB.toFixed(6)} [mS per (mL/L)]
 aK = ${aK_mLL.toFixed(6)} [mS per (mL/L stock)]
 aMg = ${aMg_mLL.toFixed(6)} [mS per (mL/L stock)]
