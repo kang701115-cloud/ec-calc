@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>양액계산기</title>
+<title>양액 계산기</title>
 
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#007BFF">
@@ -487,6 +487,50 @@ input:checked + .slider:before {
   width: 16px;
   height: 16px;
   top: 2px;
+}
+  .switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 3px;
+  bottom: 3px;   /* 핵심: inset:0 쓰지 말고 위아래 깎기 */
+  background: #d1d5db;
+  border-radius: 999px;
+  transition: 0.2s;
+}
+
+.slider:before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 0;        /* 핵심: 슬라이더 높이에 딱 맞춤 */
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+
+input:checked + .slider {
+  background: #60a5fa;
+}
+
+input:checked + .slider:before {
+  transform: translateX(18px);
 }
 </style>
 </head>
