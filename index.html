@@ -404,7 +404,7 @@ details > summary{
     <h2>양액만</h2>
     <div class="row">
       <div>
-        <label for="coefS">보정계수 (100 mL 물에 100 µL 투입 시 EC 증가, mS/cm)</label>
+        <label for="coefS">보정계수 (100 mL 물에 100 µL 투입 → EC 증가, mS/cm)</label>
         <input type="number" id="coefS" step="0.01" min="0" placeholder="예: 0.20">
       </div>
       <div>
@@ -536,10 +536,10 @@ const M_MGSO4_7H2O = (ATOMIC.Mg + ATOMIC.S + 4*ATOMIC.O) + 7*M_H2O;
 const MASSFRAC_MG_IN_MGSO4_7H2O = ATOMIC.Mg / M_MGSO4_7H2O;
 
 /* ===== storage KEY ===== */
-const KEY_SIMPLE="nutri_calc_simple_v18";
-const KEY_KMODE ="nutri_calc_kmode_v18";
-const KEY_MODE  ="nutri_calc_mode_v18";
-const KEY_UNIT  ="nutri_calc_unit_v18";
+const KEY_SIMPLE="nutri_calc_simple_v19";
+const KEY_KMODE ="nutri_calc_kmode_v19";
+const KEY_MODE  ="nutri_calc_mode_v19";
+const KEY_UNIT  ="nutri_calc_unit_v19";
 
 /* ===== DOM 유틸 ===== */
 function $(id){ return document.getElementById(id); }
@@ -670,38 +670,26 @@ function calcSimple(){
     setHTML("resultS","용매 0 불가");
     return;
   }
-  if(coef===0 || Vsolute===0){
-    setHTML("resultS", tableSimple(0));
-    setText("metaS",
-`보정계수 = ${coef.toFixed(3)} mS/cm
-용매 = ${Vsolvent.toFixed(1)} mL
-용질 = ${Vsolute.toFixed(1)} µL`);
-    saveSimple();
-    return;
-  }
 
   const ec = coef * (Vsolute / Vsolvent);
 
   setHTML("resultS", tableSimple(ec));
   setText("metaS",
 `보정계수 = ${coef.toFixed(3)} mS/cm
-입력 기준 = 100 mL에 100 µL 투입
+입력 기준 = 100 mL 물에 100 µL 투입
 현재 조건 = ${Vsolvent.toFixed(1)} mL 용매 + ${Vsolute.toFixed(1)} µL 용질`);
 
   saveSimple();
 }
 
-/* ===== 경험식 =====
-   목표 N:K 비율 r에 따라 AB 대비 추가 K 필요량을 추정하는 경험식.
-   절대 ppm 계산이 아니라 현재 실험/운용값에 맞춘 보정용.
-*/
+/* ===== 경험식 ===== */
 function kElemPerULFromRatio(r){
   return Math.max(0, RHO_AB * (0.0575*r - 0.0425) / 1000);
 }
 
 /* ===== 보조 ===== */
 function gToStockmL(g){
-  return g / STOCK_WTFRAC; // 10 wt%
+  return g / STOCK_WTFRAC;
 }
 
 /* ===== 계산(K+Mg) ===== */
@@ -730,27 +718,22 @@ function calcK(){
 
   const r = tk / tn;
 
-  // 기준 환산
-  const aAB = dAB / 5;         // mS per (mL/L)
-  const aK_mLL  = dK_100uL * 10;   // mS per (mL/L stock)
-  const aMg_mLL = dMg_100uL * 10;  // mS per (mL/L stock)
+  const aAB = dAB / 5;
+  const aK_mLL  = dK_100uL * 10;
+  const aMg_mLL = dMg_100uL * 10;
 
   const doMg = (r > 1.5);
 
-  // 초기값: AB만으로 목표 EC를 맞춘다고 가정
   let ab_mL = (E * V) / aAB;
 
   let k2so4_g = 0;
   let mgso4_g = 0;
-
   let k2so4_mL = 0;
   let mgso4_mL = 0;
-
   let extraEC = 0;
   let ecFromK = 0;
   let ecFromMg = 0;
 
-  // 반복 계산
   for(let i=0; i<8; i++){
     const ab_uL = ab_mL * 1000;
 
@@ -784,56 +767,11 @@ function calcK(){
   const ecFromAB = (ab_mL / V) * aAB;
   const totalEC = ecFromAB + extraEC;
 
-  // Ca ppm 추가 (A/B액에 2.25 wt% Ca, 밀도 1.21 g/mL 가정)
-  const ca_ppm = (ab_mL * RHO_AB * 0.0225 * 1000) / V;
-
-  setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL));
-
-  let warn = "";
-  if(r > 1.5){
-    warn += `N:K=${tn}:${tk} → Mg 자동보정 적용\n`;
-  }
-  if(extraEC > E){
-    warn += `주의: K/Mg만으로 목표 EC를 초과함\n`;
-  }
-
-  setText("meta",
-`추정 총 EC = ${totalEC.toFixed(3)} mS/cm
-AB가 담당한 EC = ${ecFromAB.toFixed(3)}
-K+Mg가 담당한 EC = ${extraEC.toFixed(3)}
-Ca(AB 2.25%) = ${ca_ppm.toFixed(1)} ppm
-${warn}`.trim());
-
-  setText("debugBox",
-`r=tK/tN = ${r.toFixed(4)}
-Mg auto = ${doMg}
-aAB = ${aAB.toFixed(6)} [mS per (mL/L)]
-aK = ${aK_mLL.toFixed(6)} [mS per (mL/L stock)]
-aMg = ${aMg_mLL.toFixed(6)} [mS per (mL/L stock)]
-
-AB total = ${ab_mL.toFixed(4)} mL
-AB total = ${vAB_uL.toFixed(2)} µL
-
-K2SO4 = ${k2so4_g.toFixed(4)} g = ${k2so4_mL.toFixed(4)} mL stock
-MgSO4·7H2O = ${mgso4_g.toFixed(4)} g = ${mgso4_mL.toFixed(4)} mL stock
-
-EC from AB = ${ecFromAB.toFixed(4)}
-EC from K = ${ecFromK.toFixed(4)}
-EC from Mg = ${ecFromMg.toFixed(4)}
-Total EC = ${totalEC.toFixed(4)}
-
-Ca ppm (AB 2.25%, density 1.21) = ${ca_ppm.toFixed(4)}`);
-
-  saveK();
-}
- 
-  const ecFromAB = (ab_mL / V) * aAB;
-  const totalEC = ecFromAB + extraEC;
-
-  // A/B액의 2.25 wt% Ca를 최종 희석액 ppm으로 환산
-  // mg/L = (mL stock * g/mL * wtfrac * 1000 mg/g) / L batch
+  // A/B액에 2.25 wt% Ca, 밀도 1.21 g/mL 가정
   const ca_ppm = (ab_mL * RHO_AB * CA_WTFRAC_IN_AB * 1000) / V;
 
+  setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL));
+
   let warn = "";
   if(r > 1.5){
     warn += `N:K=${tn}:${tk} → Mg 자동보정 적용\n`;
@@ -841,8 +779,6 @@ Ca ppm (AB 2.25%, density 1.21) = ${ca_ppm.toFixed(4)}`);
   if(extraEC > E){
     warn += `주의: K/Mg만으로 목표 EC를 초과함\n`;
   }
-
-  setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL));
 
   setText("meta",
 `추정 총 EC = ${totalEC.toFixed(3)} mS/cm
