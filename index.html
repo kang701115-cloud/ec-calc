@@ -5,16 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>양액 계산기</title>
 
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#007BFF">
+
 <style>
+/* === 기존 스타일 그대로 유지 === */
 :root{--brand:#007BFF}
-body{font-family:Arial;background:#f7f8fa;margin:0;padding:20px;text-align:center}
-.card{background:#fff;padding:20px;margin:16px auto;border-radius:14px;max-width:760px}
-input{width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid #ccc}
-button{margin-top:12px;padding:12px;width:100%;background:var(--brand);color:#fff;border:none;border-radius:8px}
+body{font-family:Arial;background:#f7f8fa;margin:0;padding:24px;text-align:center}
+.wrap{max-width:760px;margin:auto}
+.card{background:#fff;padding:20px;margin:16px auto;border-radius:14px}
+input{width:100%;padding:12px;margin-top:6px}
+.btn{margin-top:12px;padding:12px;width:100%;background:var(--brand);color:#fff;border:none;border-radius:10px}
+.hidden{display:none}
 table{width:100%;margin-top:10px;border-collapse:collapse}
 td,th{border:1px solid #eee;padding:8px}
-.hidden{display:none}
-.switch{cursor:pointer}
 </style>
 </head>
 
@@ -22,119 +26,164 @@ td,th{border:1px solid #eee;padding:8px}
 
 <h1>양액 배합 계산기</h1>
 
-<label>
-양액만
-<input type="checkbox" id="modeSwitch">
-K+Mg
-</label>
+<div class="wrap">
 
-<!-- ================= 양액만 ================= -->
+<!-- ===== 양액만 ===== -->
 <div class="card" id="cardSimple">
-
 <h2>양액만</h2>
 
+<div>
 <label>보정계수 (100mL + 100µL → EC 증가)</label>
 <input id="coefS" type="number" step="0.01">
-
-<label>용매 (mL)</label>
-<input id="VsolventS" type="number">
-
-<label>용질 (µL)</label>
-<input id="VsoluteS" type="number">
-
-<button onclick="calcSimple()">계산</button>
-
-<div id="resultS"></div>
-
 </div>
 
-<!-- ================= K+Mg ================= -->
-<div class="card hidden" id="cardK">
+<div>
+<label>용매 (mL)</label>
+<input id="VsolventS" type="number">
+</div>
 
-<h2>K+Mg 보정</h2>
+<div>
+<label>용질 (µL)</label>
+<input id="VsoluteS" type="number">
+</div>
 
+<button class="btn" onclick="calcSimple()">계산하기</button>
+
+<div id="resultS"></div>
+<div id="metaS"></div>
+</div>
+
+
+<!-- ===== K+Mg ===== -->
+<div class="card" id="cardK">
+<h2>K+Mg 보정 모드</h2>
+
+<div>
 <label>배합 용량 (L)</label>
 <input id="Vbatch" type="number">
+</div>
 
+<div>
 <label>목표 EC</label>
 <input id="ECt" type="number">
+</div>
 
-<label>AB EC 증가 (0.5mL / 100mL)</label>
+<div>
+<label>AB EC 증가</label>
 <input id="dAB" type="number">
+</div>
 
+<div>
 <label>K 비율</label>
 <input id="tK" type="number">
+</div>
 
+<div>
 <label>N 비율</label>
 <input id="tN" type="number" value="1">
+</div>
 
-<label>K stock (100µL → EC)</label>
+<div>
+<label>K stock</label>
 <input id="dK" type="number">
+</div>
 
-<label>Mg stock (100µL → EC)</label>
+<div>
+<label>Mg stock</label>
 <input id="dMg" type="number">
+</div>
 
-<label>K:Mg 비율</label>
-<input id="KMg" type="number" value="4">
+<div>
+<label>K:Mg</label>
+<input id="KMgRatio" type="number" value="4">
+</div>
 
-<button onclick="calcK()">계산</button>
+<button class="btn" onclick="calcK()">계산하기</button>
 
-<div id="resultK"></div>
+<div id="result"></div>
+<div id="meta"></div>
+
+</div>
 
 </div>
 
 <script>
 
-// ===== 모드 토글 =====
-modeSwitch.addEventListener("change",()=>{
-  cardSimple.classList.toggle("hidden",modeSwitch.checked);
-  cardK.classList.toggle("hidden",!modeSwitch.checked);
-});
+// ===== 유틸 =====
+function getNum(id){
+  const v=parseFloat(document.getElementById(id).value);
+  return Number.isFinite(v)?v:NaN;
+}
+
+function setHTML(id,html){
+  document.getElementById(id).innerHTML=html;
+}
+
+function setText(id,txt){
+  document.getElementById(id).textContent=txt;
+}
 
 
-// ===== 양액만 =====
+// ==========================
+// 1️⃣ 양액만 (뒤집힌 로직)
+// ==========================
 function calcSimple(){
 
-  const coef = parseFloat(coefS.value);
-  const solvent = parseFloat(VsolventS.value);
-  const solute = parseFloat(VsoluteS.value);
+  const coef = getNum("coefS");
+  const solvent = getNum("VsolventS");
+  const solute = getNum("VsoluteS");
 
-  if(!coef || !solvent || !solute){
-    resultS.innerHTML="입력 확인";
+  setHTML("resultS","");
+  setText("metaS","");
+
+  if([coef,solvent,solute].some(x=>!Number.isFinite(x)||x<=0)){
+    setHTML("resultS","입력 확인");
     return;
   }
 
   const EC = coef * (solute / solvent);
 
-  resultS.innerHTML = `
-  <table>
-    <tr><th>예상 EC 증가</th><th>${EC.toFixed(3)}</th><th>mS/cm</th></tr>
-  </table>`;
+  setHTML("resultS",`
+    <table>
+      <tr><th>항목</th><th>값</th><th>단위</th></tr>
+      <tr><td>예상 EC 증가</td><td>${EC.toFixed(3)}</td><td>mS/cm</td></tr>
+    </table>
+  `);
+
+  setText("metaS",
+`보정계수=${coef}
+용매=${solvent}mL
+용질=${solute}µL`);
 }
 
 
 
-// ===== K+Mg =====
+// ==========================
+// 2️⃣ K+Mg + Ca ppm 추가
+// ==========================
 function calcK(){
 
-  const V = parseFloat(Vbatch.value);
-  const E = parseFloat(ECt.value);
-  const dAB = parseFloat(dAB.value);
-  const tk = parseFloat(tK.value);
-  const tn = parseFloat(tN.value);
-  const dK = parseFloat(dK.value);
-  const dMg = parseFloat(dMg.value);
-  const KMg = parseFloat(KMg.value);
+  const V=getNum("Vbatch");
+  const E=getNum("ECt");
+  const dAB=getNum("dAB");
+  const tk=getNum("tK");
+  const tn=getNum("tN");
+  const dK=getNum("dK");
+  const dMg=getNum("dMg");
+  const KMg=getNum("KMgRatio");
 
-  if(!V || !E || !dAB || !tk || !tn || !dK || !dMg){
-    resultK.innerHTML="입력 확인";
+  setHTML("result","");
+  setText("meta","");
+
+  if([V,E,dAB,tk,tn,dK,dMg].some(x=>!Number.isFinite(x)||x<=0)){
+    setHTML("result","입력 확인");
     return;
   }
 
-  const r = tk/tn;
+  const r=tk/tn;
 
-  const aAB = dAB/5;
-  let ab = (E*V)/aAB;
+  const aAB=dAB/5;
+  let ab=(E*V)/aAB;
 
   let k=0, mg=0;
 
@@ -162,14 +211,19 @@ function calcK(){
   // ===== Ca ppm =====
   const Ca_ppm = 22500 * (ab / V);
 
-  resultK.innerHTML = `
-  <table>
-    <tr><td>A액</td><td>${A.toFixed(2)} mL</td></tr>
-    <tr><td>B액</td><td>${B.toFixed(2)} mL</td></tr>
-    <tr><td>K stock</td><td>${k.toFixed(2)} mL</td></tr>
-    <tr><td>Mg stock</td><td>${mg.toFixed(2)} mL</td></tr>
-    <tr><td><b>Ca 농도</b></td><td><b>${Ca_ppm.toFixed(1)} ppm</b></td></tr>
-  </table>`;
+  setHTML("result",`
+    <table>
+      <tr><td>A액</td><td>${A.toFixed(2)} mL</td></tr>
+      <tr><td>B액</td><td>${B.toFixed(2)} mL</td></tr>
+      <tr><td>K stock</td><td>${k.toFixed(2)} mL</td></tr>
+      <tr><td>Mg stock</td><td>${mg.toFixed(2)} mL</td></tr>
+      <tr><td><b>Ca</b></td><td><b>${Ca_ppm.toFixed(1)} ppm</b></td></tr>
+    </table>
+  `);
+
+  setText("meta",
+`총 EC=${E}
+Ca=${Ca_ppm.toFixed(1)}ppm`);
 }
 
 </script>
