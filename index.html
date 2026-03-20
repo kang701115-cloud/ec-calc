@@ -319,7 +319,7 @@ input {
   <div class="float-box" title="모드 전환">
     <span id="chipSimple" class="mode-chip">양액만</span>
     <label class="switch"><input id="modeSwitch" type="checkbox"/><span class="slider"></span></label>
-    <span id="chipK" class="mode-chip inactive">칼륨+Mg</span>
+    <span id="chipK" class="mode-chip inactive">K+Mg</span>
   </div>
   <div class="float-box" title="표시 단위 전환">
     <span class="mode-chip" id="unitLabelLeft">µL</span>
@@ -386,7 +386,7 @@ input {
     </div>
     <div class="row">
       <div>
-        <label for="dE_AB_1mLTotal_100mLS">AB(10wt%): 100 mL 물에 A 0.25 mL + B 0.25 mL(총 0.5 mL) → EC 증가 (mS/cm)</label>
+        <label for="dE_AB_1mLTotal_100mLS">AB 100 mL 물에 A 0.25 mL + B 0.25 mL(총 0.5 mL) → EC 증가 (mS/cm)</label>
         <input type="number" id="dE_AB_1mLTotal_100mLS" step="0.01" min="0" placeholder="예: 0.20">
       </div>
     </div>
@@ -395,10 +395,10 @@ input {
     <div class="meta" id="metaS"></div>
   </div>
 
-  <!-- 칼륨+Mg 자동 -->
+  <!-- K+Mg 자동 -->
   <div class="card hidden" id="cardK">
     <div class="card-head">
-      <h2 style="margin:0;">칼륨+Mg 보정 모드</h2>
+      <h2 style="margin:0;">K+Mg 보정 모드</h2>
       <button class="icon-btn" id="btnHelp" title="권장 EC / N:K 보기">i</button>
     </div>
 
@@ -415,7 +415,7 @@ input {
 
     <div class="row">
       <div>
-        <label for="dE_AB_1mLTotal_100mL">AB(10wt%): 100 mL 물에 A 0.25 mL + B 0.25 mL(총 0.5 mL) → EC 증가 (mS/cm)</label>
+        <label for="dE_AB_1mLTotal_100mL">AB 100 mL 물에 A 0.25 mL + B 0.25 mL(총 0.5 mL) → EC 증가 (mS/cm)</label>
         <input type="number" id="dE_AB_1mLTotal_100mL" step="0.01" min="0" placeholder="예: 0.20">
       </div>
       <div>
@@ -648,7 +648,7 @@ function kElemPerULFromRatio(r){
   return Math.max(0, RHO_AB * (0.0575*r - 0.0425) / 1000);
 }
 
-/* ===== 계산(칼륨+Mg 보정) ===== */
+/* ===== 계산(K+Mg 보정) ===== */
 function calcK(){
   const V=getNum("Vbatch"),
         E=getNum("ECt"),
