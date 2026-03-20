@@ -365,24 +365,23 @@ details > summary{
         - 목표 N, K는 비율값 기준 입력. 기본적으로 1.0 = N 100 ppm 기준으로 해석함.<br>
         - AB 합액의 Ca는 중량비 2.25%로 가정함.<br>
         - K, Mg, Ca(NO₃)₂는 모두 10 wt% 스톡 기준으로 출력함.<br>
-        - 이제 K는 무한히 넣지 않고, 목표 EC 안에서 가능한 만큼만 계산함.<br>
-        - K가 목표보다 많이 필요해도 EC가 부족하면 실제 가능한 K까지만 넣고 경고를 띄움.<br>
-        - K가 많아질수록 Mg 결핍 위험이 커져서 K:Mg 비를 같이 맞춤.<br>
+        - 이 모드는 AB를 먼저 기본 비율만큼 확보한 뒤, 부족한 K/Mg/Ca만 보정함.<br>
+        - K 목표가 너무 높아도 목표 EC 안에서 가능한 만큼만 반영함.<br>
+        - K가 많이 들어갈 때만 Mg 자동보정을 적용함.<br>
         - 총 Ca가 목표보다 낮으면 Ca(NO₃)₂·4H₂O 10 wt% 스톡을 자동 추가함.<br>
-        - 단, Ca(NO₃)₂의 EC 기여량은 목표 EC의 25%를 넘지 않게 제한함.<br>
-        - Ca(NO₃)₂ 추가로 들어간 질산태 N은 유효 총 N에 반영됨.
+        - 단, Ca(NO₃)₂의 EC 기여량은 목표 EC의 25%를 넘지 않게 제한함.
       </div>
 
       <div class="help-box">
         <h3>현재 계산 로직 요약</h3>
-        1. 기준 N ppm 계산<br>
-        2. 현재 AB량에서 공급되는 Ca 계산<br>
+        1. 목표 EC의 일부를 AB 기본분으로 먼저 확보<br>
+        2. 현재 AB량이 공급하는 Ca 계산<br>
         3. 부족한 Ca를 Ca(NO₃)₂로 보충하되 EC 25% 제한 적용<br>
         4. Ca(NO₃)₂로 늘어난 N을 유효 총 N에 반영<br>
         5. 유효 총 N × 목표 K:N 비로 목표 K ppm 계산<br>
-        6. 단, K₂SO₄는 남은 EC 안에서만 투입<br>
+        6. 남은 EC 안에서 K를 보정<br>
         7. 실제 들어간 K 기준으로 Mg 자동 보정<br>
-        8. 남는 EC를 AB가 채움
+        8. 남는 EC는 다시 AB로 채움
       </div>
     </div>
   </div>
@@ -475,6 +474,13 @@ details > summary{
       </div>
     </div>
 
+    <div class="row">
+      <div>
+        <label for="baseABFraction">기본 AB 확보 비율 (목표 EC의 몇 %)</label>
+        <input type="number" id="baseABFraction" step="1" min="0" max="100" value="60">
+      </div>
+    </div>
+
     <button class="btn" id="btnCalc">계산하기</button>
     <div class="result" id="result"></div>
     <div class="warn hidden" id="warnBox"></div>
@@ -550,15 +556,12 @@ const ATOMIC = {
 
 const M_H2O = 2*ATOMIC.H + ATOMIC.O;
 
-// K2SO4
 const M_K2SO4 = 2*ATOMIC.K + ATOMIC.S + 4*ATOMIC.O;
 const MASSFRAC_K_IN_K2SO4 = (2*ATOMIC.K) / M_K2SO4;
 
-// MgSO4·7H2O
 const M_MGSO4_7H2O = (ATOMIC.Mg + ATOMIC.S + 4*ATOMIC.O) + 7*M_H2O;
 const MASSFRAC_MG_IN_MGSO4_7H2O = ATOMIC.Mg / M_MGSO4_7H2O;
 
-// Ca(NO3)2·4H2O
 const M_CANO3_2_4H2O =
   ATOMIC.Ca +
   2*(ATOMIC.N + 3*ATOMIC.O) +
@@ -567,10 +570,10 @@ const MASSFRAC_CA_IN_CANO3 = ATOMIC.Ca / M_CANO3_2_4H2O;
 const MASSFRAC_N_IN_CANO3  = (2*ATOMIC.N) / M_CANO3_2_4H2O;
 
 /* ===== storage KEY ===== */
-const KEY_SIMPLE="nutri_calc_simple_v17";
-const KEY_KMODE ="nutri_calc_kmode_v17";
-const KEY_MODE  ="nutri_calc_mode_v17";
-const KEY_UNIT  ="nutri_calc_unit_v17";
+const KEY_SIMPLE="nutri_calc_simple_v18";
+const KEY_KMODE ="nutri_calc_kmode_v18";
+const KEY_MODE  ="nutri_calc_mode_v18";
+const KEY_UNIT  ="nutri_calc_unit_v18";
 
 /* ===== DOM 유틸 ===== */
 function $(id){ return document.getElementById(id); }
@@ -585,12 +588,12 @@ function getNum(id){
 function round1(x){ return Math.round(x*10)/10; }
 
 function setHTML(id, html){
-  const el=$(id);
+  const el = $(id);
   if(el) el.innerHTML = html;
 }
 
 function setText(id, txt){
-  const el=$(id);
+  const el = $(id);
   if(el) el.textContent = txt;
 }
 
@@ -675,7 +678,8 @@ function saveK(){
     dE_CaNO3_100uL_100mL:getNum("dE_CaNO3_100uL_100mL"),
     KMgRatio:getNum("KMgRatio"),
     targetCaPpm:getNum("targetCaPpm"),
-    NBasisPpm:getNum("NBasisPpm")
+    NBasisPpm:getNum("NBasisPpm"),
+    baseABFraction:getNum("baseABFraction")
   };
   SafeStorage.setItem(KEY_KMODE,JSON.stringify(d));
 }
@@ -773,13 +777,14 @@ function calcK(){
   const kMgRatio=getNum("KMgRatio");
   const targetCaPpm=getNum("targetCaPpm");
   const nBasisPpm=getNum("NBasisPpm");
+  const baseABFractionInput=getNum("baseABFraction");
 
   setHTML("result","");
   setText("meta","");
   setText("debugBox","");
   setWarn("");
 
-  if([V,E,dAB,tk,tn,dK_100uL,dMg_100uL,dCa_100uL,kMgRatio,targetCaPpm,nBasisPpm].some(x=>!Number.isFinite(x)||x<0)){
+  if([V,E,dAB,tk,tn,dK_100uL,dMg_100uL,dCa_100uL,kMgRatio,targetCaPpm,nBasisPpm,baseABFractionInput].some(x=>!Number.isFinite(x)||x<0)){
     setHTML("result","입력 확인");
     return;
   }
@@ -804,6 +809,8 @@ function calcK(){
     return;
   }
 
+  const baseABFraction = Math.min(100, Math.max(0, baseABFractionInput)) / 100;
+
   const aAB = dAB / 5;
   const aK_mLL  = dK_100uL * 10;
   const aMg_mLL = dMg_100uL * 10;
@@ -820,84 +827,79 @@ function calcK(){
   const Ca_mg_per_mL_stock = STOCK_WTFRAC * 1000 * MASSFRAC_CA_IN_CANO3;
   const N_mg_per_mL_CaNO3  = STOCK_WTFRAC * 1000 * MASSFRAC_N_IN_CANO3;
 
-  let ab_mL = (E * V) / aAB;
+  const baseAB_EC = E * baseABFraction;
+  const baseAB_mL = (baseAB_EC * V) / aAB;
 
-  let k2so4_target_mL = 0;
-  let k2so4_mL = 0;
-  let mgso4_target_mL = 0;
-  let mgso4_mL = 0;
+  let ab_mL = baseAB_mL;
   let cano3_mL = 0;
-
-  let ecFromK = 0;
-  let ecFromMg = 0;
-  let ecFromCa = 0;
-  let ecFromAB = 0;
+  let k2so4_mL = 0;
+  let mgso4_mL = 0;
 
   let caFromAB_ppm = 0;
   let caFromCaNO3_ppm = 0;
   let totalCaPpm = 0;
+
   let extraNppm = 0;
   let effectiveNppm = baseNppm;
+
   let targetKppm = 0;
   let actualKppm = 0;
+
   let targetMgppm = 0;
   let actualMgppm = 0;
   let doMg = false;
 
+  let ecFromAB = 0;
+  let ecFromCa = 0;
+  let ecFromK = 0;
+  let ecFromMg = 0;
+  let extraEC = 0;
+  let remainForBoost = 0;
+
+  let cano3_mL_byCa = 0;
+  let cano3_mL_byEC = 0;
   let caLimitedByEC = false;
   let kLimitedByEC = false;
   let mgLimitedByEC = false;
 
-  let cano3_mL_byCa = 0;
-  let cano3_mL_byEC = 0;
-
   for(let i=0;i<12;i++){
     const ab_uL = ab_mL * 1000;
 
-    // 현재 AB가 공급하는 Ca
     const caFromAB_g = calcCaFromAB_g(ab_uL);
     caFromAB_ppm = gToPpm(caFromAB_g, V);
 
-    // 부족한 Ca를 CaNO3로 보충, 단 EC 25% cap
     const lackingCaPpm = Math.max(0, targetCaPpm - caFromAB_ppm);
     cano3_mL_byCa = lackingCaPpm * V / Ca_mg_per_mL_stock;
     cano3_mL_byEC = (maxCaEC * V) / aCa_mLL;
     cano3_mL = Math.min(cano3_mL_byCa, cano3_mL_byEC);
-
     caLimitedByEC = cano3_mL_byCa > cano3_mL_byEC + 1e-12;
 
+    ecFromCa = (cano3_mL / V) * aCa_mLL;
     caFromCaNO3_ppm = (cano3_mL * Ca_mg_per_mL_stock) / V;
     totalCaPpm = caFromAB_ppm + caFromCaNO3_ppm;
 
-    // CaNO3로 추가된 N 반영
     extraNppm = (cano3_mL * N_mg_per_mL_CaNO3) / V;
     effectiveNppm = baseNppm + extraNppm;
 
-    // 목표 K
     targetKppm = effectiveNppm * inputRatio;
-    k2so4_target_mL = targetKppm * V / K_mg_per_mL_stock;
+    const k2so4_target_mL = targetKppm * V / K_mg_per_mL_stock;
 
-    // 먼저 Ca가 먹은 EC 제외
-    ecFromCa = (cano3_mL / V) * aCa_mLL;
+    remainForBoost = Math.max(0, E - baseAB_EC - ecFromCa);
+    const maxK_mL_byEC = (remainForBoost * V) / aK_mLL;
 
-    let remainAfterCa = Math.max(0, E - ecFromCa);
-    const maxK_mL_byEC = (remainAfterCa * V) / aK_mLL;
-
-    // K를 무한정 넣지 않음: 남은 EC 안에서만
     k2so4_mL = Math.min(k2so4_target_mL, maxK_mL_byEC);
     kLimitedByEC = k2so4_target_mL > maxK_mL_byEC + 1e-12;
 
     ecFromK = (k2so4_mL / V) * aK_mLL;
     actualKppm = (k2so4_mL * K_mg_per_mL_stock) / V;
 
-    // Mg는 실제 K 기준으로 잡음
     doMg = inputRatio > 1.5;
     if(doMg){
       targetMgppm = actualKppm / kMgRatio;
-      mgso4_target_mL = targetMgppm * V / Mg_mg_per_mL_stock;
+      const mgso4_target_mL = targetMgppm * V / Mg_mg_per_mL_stock;
 
-      const remainAfterCaK = Math.max(0, E - ecFromCa - ecFromK);
-      const maxMg_mL_byEC = (remainAfterCaK * V) / aMg_mLL;
+      const remainForMg = Math.max(0, E - baseAB_EC - ecFromCa - ecFromK);
+      const maxMg_mL_byEC = (remainForMg * V) / aMg_mLL;
 
       mgso4_mL = Math.min(mgso4_target_mL, maxMg_mL_byEC);
       mgLimitedByEC = mgso4_target_mL > maxMg_mL_byEC + 1e-12;
@@ -907,27 +909,28 @@ function calcK(){
     }else{
       targetMgppm = 0;
       actualMgppm = 0;
-      mgso4_target_mL = 0;
       mgso4_mL = 0;
       ecFromMg = 0;
       mgLimitedByEC = false;
     }
 
-    const remainingEC = Math.max(0, E - ecFromCa - ecFromK - ecFromMg);
-    ab_mL = (remainingEC * V) / aAB;
-    ecFromAB = (ab_mL / V) * aAB;
+    extraEC = ecFromCa + ecFromK + ecFromMg;
+    ecFromAB = Math.max(baseAB_EC, E - extraEC);
+    ab_mL = (ecFromAB * V) / aAB;
   }
 
   const vAB_uL = ab_mL * 1000;
   const vA_uL = vAB_uL / 2;
   const vB_uL = vAB_uL / 2;
-
-  const totalEC = ecFromAB + ecFromK + ecFromMg + ecFromCa;
+  const totalEC = ecFromAB + ecFromCa + ecFromK + ecFromMg;
 
   setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL, cano3_mL));
 
-  let warnLines = [];
+  const warnLines = [];
 
+  if(baseABFraction > 0){
+    warnLines.push(`기본 AB 확보: 목표 EC의 ${(baseABFraction*100).toFixed(0)}%`);
+  }
   if(doMg){
     warnLines.push(`목표 K:N = ${inputRatio.toFixed(2)}:1 → Mg 자동보정 적용`);
   }
@@ -943,17 +946,13 @@ function calcK(){
   if(caLimitedByEC && totalCaPpm < targetCaPpm - 0.5){
     warnLines.push(`주의: Ca(NO₃)₂ EC 기여량을 목표 EC의 25%로 제한해서 Ca 목표를 다 못 맞춤`);
   }
-  if(ecFromAB < 1e-9 && (ecFromK + ecFromMg + ecFromCa) > E + 1e-9){
-    warnLines.push(`주의: 보정염만으로 목표 EC를 초과하는 입력 조합임`);
-  }
 
-  const hardWarn = warnLines.join("\n");
-  setWarn(hardWarn);
+  setWarn(warnLines.join("\n"));
 
   setText("meta",
 `추정 총 EC = ${totalEC.toFixed(3)} mS/cm
 AB가 담당한 EC = ${ecFromAB.toFixed(3)}
-K+Mg+Ca가 담당한 EC = ${(ecFromK + ecFromMg + ecFromCa).toFixed(3)}
+K+Mg+Ca가 담당한 EC = ${(ecFromCa + ecFromK + ecFromMg).toFixed(3)}
 
 Ca(AB) = ${caFromAB_ppm.toFixed(1)} ppm
 Ca(CaNO₃) = ${caFromCaNO3_ppm.toFixed(1)} ppm
@@ -974,6 +973,10 @@ CaNO₃로 추가된 질산태 N = ${extraNppm.toFixed(1)} ppm
 N 기준 1.0 = ${nBasisPpm.toFixed(1)} ppm
 base N ppm = ${baseNppm.toFixed(4)}
 effective total N ppm = ${effectiveNppm.toFixed(4)}
+
+기본 AB 비율 = ${(baseABFraction*100).toFixed(2)}%
+기본 AB EC = ${baseAB_EC.toFixed(4)}
+최종 AB EC = ${ecFromAB.toFixed(4)}
 
 target K ppm = ${targetKppm.toFixed(4)}
 actual K ppm = ${actualKppm.toFixed(4)}
@@ -997,17 +1000,15 @@ CaNO3 required by Ca target = ${cano3_mL_byCa.toFixed(4)} mL stock
 CaNO3 allowed by EC cap = ${cano3_mL_byEC.toFixed(4)} mL stock
 Ca limited by EC cap = ${caLimitedByEC}
 
-K2SO4 target = ${k2so4_target_mL.toFixed(4)} mL
-K2SO4 actual = ${k2so4_mL.toFixed(4)} mL
+remain for boost after base AB + Ca = ${remainForBoost.toFixed(4)}
 K limited by EC cap = ${kLimitedByEC}
-
-MgSO4 target = ${mgso4_target_mL.toFixed(4)} mL
-MgSO4 actual = ${mgso4_mL.toFixed(4)} mL
 Mg limited by EC cap = ${mgLimitedByEC}
 
 AB total = ${ab_mL.toFixed(4)} mL
 AB total = ${vAB_uL.toFixed(2)} µL
 
+K2SO4 stock = ${k2so4_mL.toFixed(4)} mL
+MgSO4·7H2O stock = ${mgso4_mL.toFixed(4)} mL
 Ca(NO3)2·4H2O stock = ${cano3_mL.toFixed(4)} mL
 
 EC from AB = ${ecFromAB.toFixed(4)}
@@ -1078,7 +1079,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
     [
       "Vbatch","ECt","dE_AB_1mLTotal_100mL","tK","tN",
       "dE_Kstock_100uL_100mL","dE_Mgstock_100uL_100mL","dE_CaNO3_100uL_100mL",
-      "KMgRatio","targetCaPpm","NBasisPpm"
+      "KMgRatio","targetCaPpm","NBasisPpm","baseABFraction"
     ].forEach(id=>{
       $(id)?.addEventListener("change", saveK);
     });
