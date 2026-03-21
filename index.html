@@ -747,13 +747,15 @@ function calcK(){
     return;
   }
 
-  // 목표 K/N
+  // ===== 상수 =====
+  const baseNK = 0.74;                 // AB 기본 N:K = 1:0.74
+  const MG_WTFRAC_IN_AB = 0.005;       // AB 내 Mg 0.5 wt%
+  const MG_FRAC_IN_MGSO4_7H2O = 0.0986; // MgSO4·7H2O 중 Mg 질량비 약 9.86%
+
+  // ===== 목표 비율 =====
   const r = tk / tn;
 
-  // AB 기본 N:K = 1:0.78
-  const baseNK = 0.78;
-
-  // 계수 환산
+  // ===== 계수 환산 =====
   // AB: 100 mL 물에 A 100 µL + B 100 µL (총 200 µL) 넣었을 때 dAB 증가
   // => 1 L 기준 총 2 mL/L
   const aAB = dAB / 2;              // mS per (mL/L of AB total)
@@ -765,55 +767,76 @@ function calcK(){
 
   let ecFromAB = 0;
   let ecFromK = 0;
-  let ecFromMg = 0;
+  let ecFromMg_raw = 0;
 
   if(r <= baseNK){
     // 목표 K/N이 AB 기본값 이하이면 추가 K, Mg 없이 AB만
     ecFromAB = E;
     ecFromK = 0;
-    ecFromMg = 0;
+    ecFromMg_raw = 0;
   }else{
-    // K:Mg 분배 비율
-    // extraEC 중에서 K가 차지하는 비율
+    // 기존 로직 유지: 추가 EC를 K/Mg 비율로 분배
     const kFrac = kMgRatio / (kMgRatio + 1);
     const mgFrac = 1 / (kMgRatio + 1);
 
-    // 식 유도:
-    // 최종 K/N = r
-    // AB가 주는 기본 K/N = baseNK
-    // 추가 K는 extraEC의 kFrac만큼 들어감
-    //
-    // (baseNK * ecFromAB + ecFromK) / ecFromAB = r
-    // ecFromK = extraEC * kFrac
-    // E = ecFromAB + extraEC
-    //
-    // => extraEC = (r - baseNK) * E / (kFrac + (r - baseNK))
     const delta = r - baseNK;
     const extraEC = (delta * E) / (kFrac + delta);
 
     ecFromK = extraEC * kFrac;
-    ecFromMg = extraEC * mgFrac;
+    ecFromMg_raw = extraEC * mgFrac;
     ecFromAB = E - extraEC;
   }
 
-  // 음수 보호
   ecFromAB = Math.max(0, ecFromAB);
   ecFromK = Math.max(0, ecFromK);
-  ecFromMg = Math.max(0, ecFromMg);
+  ecFromMg_raw = Math.max(0, ecFromMg_raw);
 
+  // ===== AB, K 기본 계산 =====
   const ab_mL = (ecFromAB * V) / aAB;
   const vAB_uL = ab_mL * 1000;
   const vA_uL = vAB_uL / 2;
   const vB_uL = vAB_uL / 2;
 
   const k2so4_mL = (ecFromK * V) / aK_mLL;
-  const mgso4_mL = (ecFromMg * V) / aMg_mLL;
-
   const k2so4_g = k2so4_mL * STOCK_WTFRAC;
+
+  // ===== Mg 목표량(기존 로직 기준) -> ppm으로 환산 =====
+  // 기존 로직대로라면 필요한 MgSO4 스톡량
+  const mgso4_mL_raw = (ecFromMg_raw * V) / aMg_mLL;
+
+  // 그게 공급하려던 "총 Mg ppm 목표"를 계산
+  // 기존 코드 가정 유지: 10 wt% 스톡 1 mL ≈ 용질 0.1 g
+  const mgTarget_ppm =
+    (mgso4_mL_raw * STOCK_WTFRAC * MG_FRAC_IN_MGSO4_7H2O * 1000) / V;
+
+  // ===== AB가 이미 공급한 Mg ppm =====
+  const mgFromAB_ppm =
+    (ab_mL * RHO_AB * MG_WTFRAC_IN_AB * 1000) / V;
+
+  // ===== MgSO4에서 추가로 필요한 Mg ppm =====
+  const mgNeedFromStock_ppm = Math.max(0, mgTarget_ppm - mgFromAB_ppm);
+
+  // ===== 필요한 MgSO4 스톡 부피 재계산 =====
+  const mg_ppm_per_mL_stock =
+    (STOCK_WTFRAC * MG_FRAC_IN_MGSO4_7H2O * 1000) / V;
+
+  const mgso4_mL =
+    (mg_ppm_per_mL_stock > 0) ? (mgNeedFromStock_ppm / mg_ppm_per_mL_stock) : 0;
+
   const mgso4_g = mgso4_mL * STOCK_WTFRAC;
 
+  // 참고용: 최종 Mg 공급량
+  const mgFromStock_ppm =
+    (mgso4_mL * STOCK_WTFRAC * MG_FRAC_IN_MGSO4_7H2O * 1000) / V;
+
+  const mgTotal_ppm = mgFromAB_ppm + mgFromStock_ppm;
+
+  // 실제 최종 EC 추정
+  // Mg를 AB 크레딧만큼 뺐으므로, 실제 Mg EC 기여도도 줄어듦
+  const ecFromMg_final = (mgso4_mL * aMg_mLL) / V;
+  const totalEC = ecFromAB + ecFromK + ecFromMg_final;
+
   const ca_ppm = (ab_mL * RHO_AB * CA_WTFRAC_IN_AB * 1000) / V;
-  const totalEC = ecFromAB + ecFromK + ecFromMg;
 
   setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL));
 
@@ -823,13 +846,20 @@ function calcK(){
   }else{
     warn += `목표 K/N이 AB 기본값 이하라서 K/Mg 추가 없음\n`;
   }
+  if(mgFromAB_ppm >= mgTarget_ppm && mgTarget_ppm > 0){
+    warn += `AB 안의 Mg만으로 목표 Mg를 이미 충족해서 MgSO₄ 추가량을 0으로 처리함\n`;
+  }
 
   setText("meta",
 `추정 총 EC = ${totalEC.toFixed(3)} mS/cm
 AB가 담당한 EC = ${ecFromAB.toFixed(3)}
 K가 담당한 EC = ${ecFromK.toFixed(3)}
-Mg가 담당한 EC = ${ecFromMg.toFixed(3)}
+Mg가 담당한 EC(최종) = ${ecFromMg_final.toFixed(3)}
 Ca(AB 2.25%) = ${ca_ppm.toFixed(1)} ppm
+Mg 목표치(기존 로직 기준) = ${mgTarget_ppm.toFixed(2)} ppm
+AB가 공급한 Mg = ${mgFromAB_ppm.toFixed(2)} ppm
+MgSO₄가 공급한 Mg = ${mgFromStock_ppm.toFixed(2)} ppm
+총 Mg = ${mgTotal_ppm.toFixed(2)} ppm
 ${warn}`.trim());
 
   setText("debugBox",
@@ -842,7 +872,8 @@ aMg = ${aMg_mLL.toFixed(6)} [mS per (mL/L stock)]
 
 ecFromAB = ${ecFromAB.toFixed(6)}
 ecFromK = ${ecFromK.toFixed(6)}
-ecFromMg = ${ecFromMg.toFixed(6)}
+ecFromMg_raw = ${ecFromMg_raw.toFixed(6)}
+ecFromMg_final = ${ecFromMg_final.toFixed(6)}
 totalEC = ${totalEC.toFixed(6)}
 
 AB total = ${ab_mL.toFixed(4)} mL
@@ -850,7 +881,14 @@ A = ${vA_uL.toFixed(2)} µL
 B = ${vB_uL.toFixed(2)} µL
 
 K2SO4 = ${k2so4_g.toFixed(4)} g = ${k2so4_mL.toFixed(4)} mL stock
-MgSO4·7H2O = ${mgso4_g.toFixed(4)} g = ${mgso4_mL.toFixed(4)} mL stock
+MgSO4 raw target = ${mgso4_mL_raw.toFixed(4)} mL stock
+MgSO4 final = ${mgso4_g.toFixed(4)} g = ${mgso4_mL.toFixed(4)} mL stock
+
+mgTarget_ppm = ${mgTarget_ppm.toFixed(6)}
+mgFromAB_ppm = ${mgFromAB_ppm.toFixed(6)}
+mgNeedFromStock_ppm = ${mgNeedFromStock_ppm.toFixed(6)}
+mgFromStock_ppm = ${mgFromStock_ppm.toFixed(6)}
+mgTotal_ppm = ${mgTotal_ppm.toFixed(6)}
 
 Ca ppm (AB 2.25%, density 1.21) = ${ca_ppm.toFixed(4)}`);
 
