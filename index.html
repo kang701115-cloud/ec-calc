@@ -441,7 +441,7 @@ details > summary{
 
     <div class="row">
       <div>
-        <label for="dE_AB_1mLTotal_100mL">AB 100 mL 물에 A 0.25 mL + B 0.25 mL(총 0.5 mL) → EC 증가 (mS/cm)</label>
+        <label for="dE_AB_1mLTotal_100mL">AB 100 mL 물에 A 100ul + B 100ul(총 200ul) → EC 증가 (mS/cm)</label>
         <input type="number" id="dE_AB_1mLTotal_100mL" step="0.01" min="0" placeholder="예: 0.20">
       </div>
       <div>
@@ -708,7 +708,8 @@ function calcSimple(){
    기존 경험식이 과도하게 커져서 0으로 수렴하던 문제를 피하려고
    비율 기반 EC 배분 방식으로 안정화한 보정 로직.
 */
-function calcK(){
+
+ function calcK(){
   const V = getNum("Vbatch"),
         E = getNum("ECt"),
         dAB = getNum("dE_AB_1mLTotal_100mL"),
@@ -746,9 +747,9 @@ function calcK(){
   const r = tk / tn;
 
   // 계수 환산
-  // AB: 100 mL 물에 총 0.5 mL 넣었을 때 dAB 증가
-  // => 1 L 기준 총 5 mL/L
-  const aAB = dAB / 5;            // mS per (mL/L)
+  // AB: 100 mL 물에 총 100 µL(=0.1 mL) 넣었을 때 dAB 증가
+  // => 1 L 기준 총 1 mL/L
+  const aAB = dAB/2;            // mS per (mL/L)
 
   // K, Mg: 100 mL 물에 100 µL 넣었을 때 증가량
   // => 1 L 기준 1 mL/L
@@ -757,15 +758,11 @@ function calcK(){
 
   const doMg = (r > 1);
 
-  // ===== 핵심 로직 =====
-  // r=1이면 추가 K/Mg 없음
-  // r>1이면 추가 EC를 선형으로 증가시킴
   let extraEC = 0;
   if(r > 1){
     extraEC = E * (r - 1) / 2;
   }
 
-  // 총 추가 EC가 목표 EC를 넘지 않게 제한
   extraEC = Math.min(extraEC, E);
 
   let ecFromK = 0;
@@ -781,22 +778,18 @@ function calcK(){
 
   const ecFromAB = Math.max(0, E - ecFromK - ecFromMg);
 
-  // AB 용량
   const ab_mL = (ecFromAB * V) / aAB;
   const vAB_uL = ab_mL * 1000;
   const vA_uL = vAB_uL / 2;
   const vB_uL = vAB_uL / 2;
 
-  // K, Mg 스톡 용량
   const k2so4_mL = (ecFromK * V) / aK_mLL;
   const mgso4_mL = (ecFromMg * V) / aMg_mLL;
 
   const k2so4_g = k2so4_mL * STOCK_WTFRAC;
   const mgso4_g = mgso4_mL * STOCK_WTFRAC;
 
-  // AB 2.25 wt% Ca, 밀도 1.21 g/mL
   const ca_ppm = (ab_mL * RHO_AB * CA_WTFRAC_IN_AB * 1000) / V;
-
   const totalEC = ecFromAB + ecFromK + ecFromMg;
 
   setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL));
@@ -840,7 +833,6 @@ Ca ppm (AB 2.25%, density 1.21) = ${ca_ppm.toFixed(4)}`);
 
   saveK();
 }
- 
 /* ===== 도움말 모달 ===== */
 function openHelp(){
   $("helpModal")?.classList.add("open");
