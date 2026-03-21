@@ -560,12 +560,35 @@ function applyModeUI(isK){
   SafeStorage.setItem(KEY_MODE,JSON.stringify(isK));
 }
 function applyUnitUI(isML){
-  if($("unitSwitch")) $("unitSwitch").checked=isML;
-  $("unitLabelLeft")?.classList.toggle("inactive",isML);
-  $("unitLabelRight")?.classList.toggle("inactive",!isML);
-  SafeStorage.setItem(KEY_UNIT,JSON.stringify(isML));
-}
+  // 스위치 상태 반영
+  const sw = document.getElementById("unitSwitch");
+  if(sw) sw.checked = isML;
 
+  // 라벨 색상 토글
+  const left = document.getElementById("unitLabelLeft");
+  const right = document.getElementById("unitLabelRight");
+
+  if(left) left.classList.toggle("inactive", isML);
+  if(right) right.classList.toggle("inactive", !isML);
+
+  // 상태 저장
+  try{
+    localStorage.setItem("nutri_calc_unit_v20", JSON.stringify(isML));
+  }catch(e){}
+
+  // 🔥 핵심: 단위 바뀌면 결과 다시 계산
+  try{
+    const isK = JSON.parse(localStorage.getItem("nutri_calc_mode_v20") || "false");
+
+    if(isK){
+      if(typeof calcK === "function") calcK();
+    }else{
+      if(typeof calcSimple === "function") calcSimple();
+    }
+  }catch(e){
+    console.warn("재계산 실패:", e);
+  }
+}
 /* ===== 저장/로드 ===== */
 function loadSimple(){
   let d=null;
@@ -624,16 +647,32 @@ function tableSimple(ec){
 }
 function tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL){
   const u = unitName();
+  const su = stockUnitName();
+
   return `
   <table>
     <thead><tr><th>항목</th><th>값</th><th>단위</th></tr></thead>
     <tbody>
       <tr><td>A액(10wt%)</td><td>${cellVol(vA_uL)}</td><td>${u}</td></tr>
       <tr><td>B액(10wt%)</td><td>${cellVol(vB_uL)}</td><td>${u}</td></tr>
-      <tr><td>K₂SO₄ 10wt% 스톡</td><td>${k2so4_mL.toFixed(2)}</td><td>mL</td></tr>
-      <tr><td>MgSO₄·7H₂O 10wt% 스톡</td><td>${mgso4_mL.toFixed(2)}</td><td>mL</td></tr>
+      <tr><td>K₂SO₄ 10wt% 스톡</td><td>${stockDisplayText(k2so4_mL)}</td><td>${su}</td></tr>
+      <tr><td>MgSO₄·7H₂O 10wt% 스톡</td><td>${stockDisplayText(mgso4_mL)}</td><td>${su}</td></tr>
     </tbody>
   </table>`;
+}
+
+function stockUnitName(){
+  return isUnitML() ? "mL" : "µL";
+}
+
+function stockToDisplay(v_mL){
+  return isUnitML() ? v_mL : v_mL * 1000;
+}
+
+function stockDisplayText(v_mL){
+  return isUnitML()
+    ? stockToDisplay(v_mL).toFixed(2)
+    : stockToDisplay(v_mL).toFixed(1);
 }
 
 /* ===== 계산(양액만) ===== */
@@ -670,95 +709,126 @@ function calcSimple(){
    비율 기반 EC 배분 방식으로 안정화한 보정 로직.
 */
 function calcK(){
-  const V=getNum("Vbatch"),
-        E=getNum("ECt"),
-        dAB=getNum("dE_AB_1mLTotal_100mL"),
-        tk=getNum("tK"),
-        tn=getNum("tN"),
-        dK_100uL=getNum("dE_Kstock_100uL_100mL"),
-        dMg_100uL=getNum("dE_Mgstock_100uL_100mL"),
-        kMgRatio=getNum("KMgRatio");
+  const V = getNum("Vbatch"),
+        E = getNum("ECt"),
+        dAB = getNum("dE_AB_1mLTotal_100mL"),
+        tk = getNum("tK"),
+        tn = getNum("tN"),
+        dK_100uL = getNum("dE_Kstock_100uL_100mL"),
+        dMg_100uL = getNum("dE_Mgstock_100uL_100mL"),
+        kMgRatio = getNum("KMgRatio");
 
-  setHTML("result","");
-  setText("meta","");
-  setText("debugBox","");
+  setHTML("result", "");
+  setText("meta", "");
+  setText("debugBox", "");
 
-  if([V,E,dAB,tk,tn,dK_100uL,dMg_100uL,kMgRatio].some(x=>!Number.isFinite(x)||x<0)){
-    setHTML("result","입력 확인");
+  if([V,E,dAB,tk,tn,dK_100uL,dMg_100uL,kMgRatio].some(x => !Number.isFinite(x) || x < 0)){
+    setHTML("result", "입력 확인");
     return;
   }
-  if(V===0){ setHTML("result","부피 0 불가"); return; }
-  if(tn<=0){ setHTML("result","목표 N 비율값 0 불가"); return; }
-  if(kMgRatio<=0){ setHTML("result","K:Mg 비율 0 불가"); return; }
-  if(dAB===0 || dK_100uL===0 || dMg_100uL===0){ setHTML("result","EC증분 0 불가"); return; }
-
-  const r = tk / tn;
-  const aAB = dAB / 5;          // mS per (mL/L)
-  const aK_mLL = dK_100uL * 10; // mS per (mL/L stock)
-  const aMg_mLL = dMg_100uL * 10;
-
-  const doMg = (r >= 1.5);
-
-  // 비율 편차가 커질수록 K가 더 많은 EC를 담당하게 함
-  const ratioDelta = Math.max(0, r - 1);
-  let ecFromK = E * ratioDelta * 0.4;      // 보정 강도
-  ecFromK = Math.min(ecFromK, E * 0.60);   // 과도한 잠식 방지
-
-  let ecFromMg = doMg ? (ecFromK / kMgRatio) : 0;
-  let extraEC = ecFromK + ecFromMg;
-
-  // K+Mg가 전체 목표 EC를 먹어버리지 않게 제한
-  if(extraEC > E * 0.85){
-    const scale = (E * 0.85) / extraEC;
-    ecFromK *= scale;
-    ecFromMg *= scale;
-    extraEC = ecFromK + ecFromMg;
+  if(V === 0){
+    setHTML("result", "부피 0 불가");
+    return;
+  }
+  if(tn <= 0){
+    setHTML("result", "목표 N 비율값 0 불가");
+    return;
+  }
+  if(kMgRatio <= 0){
+    setHTML("result", "K:Mg 비율 0 불가");
+    return;
+  }
+  if(dAB === 0 || dK_100uL === 0 || dMg_100uL === 0){
+    setHTML("result", "EC증분 0 불가");
+    return;
   }
 
-  const remainingEC = Math.max(0, E - extraEC);
-  const ab_mL = (remainingEC * V) / aAB;
+  const r = tk / tn;
 
-  const k2so4_mL = (ecFromK / aK_mLL) * V;
-  const mgso4_mL = (ecFromMg / aMg_mLL) * V;
+  // 계수 환산
+  // AB: 100 mL 물에 총 0.5 mL 넣었을 때 dAB 증가
+  // => 1 L 기준 총 5 mL/L
+  const aAB = dAB / 5;            // mS per (mL/L)
 
-  const k2so4_g = k2so4_mL * STOCK_WTFRAC;
-  const mgso4_g = mgso4_mL * STOCK_WTFRAC;
+  // K, Mg: 100 mL 물에 100 µL 넣었을 때 증가량
+  // => 1 L 기준 1 mL/L
+  const aK_mLL = dK_100uL * 10;   // mS per (mL/L stock)
+  const aMg_mLL = dMg_100uL * 10; // mS per (mL/L stock)
 
+  const doMg = (r > 1);
+
+  // ===== 핵심 로직 =====
+  // r=1이면 추가 K/Mg 없음
+  // r>1이면 추가 EC를 선형으로 증가시킴
+  let extraEC = 0;
+  if(r > 1){
+    extraEC = E * (r - 1) / 2;
+  }
+
+  // 총 추가 EC가 목표 EC를 넘지 않게 제한
+  extraEC = Math.min(extraEC, E);
+
+  let ecFromK = 0;
+  let ecFromMg = 0;
+
+  if(doMg && extraEC > 0){
+    ecFromK = extraEC * (kMgRatio / (kMgRatio + 1));
+    ecFromMg = extraEC * (1 / (kMgRatio + 1));
+  }else{
+    ecFromK = 0;
+    ecFromMg = 0;
+  }
+
+  const ecFromAB = Math.max(0, E - ecFromK - ecFromMg);
+
+  // AB 용량
+  const ab_mL = (ecFromAB * V) / aAB;
   const vAB_uL = ab_mL * 1000;
   const vA_uL = vAB_uL / 2;
   const vB_uL = vAB_uL / 2;
 
-  const ecFromAB = (ab_mL / V) * aAB;
-  const totalEC = ecFromAB + extraEC;
+  // K, Mg 스톡 용량
+  const k2so4_mL = (ecFromK * V) / aK_mLL;
+  const mgso4_mL = (ecFromMg * V) / aMg_mLL;
 
-  // A/B액에 2.25 wt% Ca, 밀도 1.21 g/mL 가정
+  const k2so4_g = k2so4_mL * STOCK_WTFRAC;
+  const mgso4_g = mgso4_mL * STOCK_WTFRAC;
+
+  // AB 2.25 wt% Ca, 밀도 1.21 g/mL
   const ca_ppm = (ab_mL * RHO_AB * CA_WTFRAC_IN_AB * 1000) / V;
+
+  const totalEC = ecFromAB + ecFromK + ecFromMg;
 
   setHTML("result", tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL));
 
   let warn = "";
-  if(doMg){
-    warn += `N:K=${tn}:${tk} → Mg 자동보정 적용\n`;
+  if(r > 1){
+    warn += `N:K=${tn}:${tk} → K/Mg 보정 적용\n`;
   }
-  if(extraEC > E * 0.6){
-    warn += `주의: K/Mg 비중이 큼\n`;
+  if(totalEC > E + 1e-9){
+    warn += `주의: 총 EC가 목표치를 초과함\n`;
   }
 
   setText("meta",
 `추정 총 EC = ${totalEC.toFixed(3)} mS/cm
 AB가 담당한 EC = ${ecFromAB.toFixed(3)}
-K+Mg가 담당한 EC = ${extraEC.toFixed(3)}
+K+Mg가 담당한 EC = ${(ecFromK + ecFromMg).toFixed(3)}
 Ca(AB 2.25%) = ${ca_ppm.toFixed(1)} ppm
 ${warn}`.trim());
 
   setText("debugBox",
 `r=tK/tN = ${r.toFixed(4)}
-Mg auto = ${doMg}
-ratioDelta = ${ratioDelta.toFixed(4)}
+Mg split = ${doMg}
 
 aAB = ${aAB.toFixed(6)} [mS per (mL/L)]
 aK = ${aK_mLL.toFixed(6)} [mS per (mL/L stock)]
 aMg = ${aMg_mLL.toFixed(6)} [mS per (mL/L stock)]
+
+extraEC = ${extraEC.toFixed(6)}
+EC from AB = ${ecFromAB.toFixed(6)}
+EC from K = ${ecFromK.toFixed(6)}
+EC from Mg = ${ecFromMg.toFixed(6)}
+Total EC = ${totalEC.toFixed(6)}
 
 AB total = ${ab_mL.toFixed(4)} mL
 AB total = ${vAB_uL.toFixed(2)} µL
@@ -766,16 +836,11 @@ AB total = ${vAB_uL.toFixed(2)} µL
 K2SO4 = ${k2so4_g.toFixed(4)} g = ${k2so4_mL.toFixed(4)} mL stock
 MgSO4·7H2O = ${mgso4_g.toFixed(4)} g = ${mgso4_mL.toFixed(4)} mL stock
 
-EC from AB = ${ecFromAB.toFixed(4)}
-EC from K = ${ecFromK.toFixed(4)}
-EC from Mg = ${ecFromMg.toFixed(4)}
-Total EC = ${totalEC.toFixed(4)}
-
 Ca ppm (AB 2.25%, density 1.21) = ${ca_ppm.toFixed(4)}`);
 
   saveK();
 }
-
+ 
 /* ===== 도움말 모달 ===== */
 function openHelp(){
   $("helpModal")?.classList.add("open");
