@@ -277,11 +277,14 @@ details > summary{
 .modal.open{display:flex}
 .modal-card{
   width:min(680px,100%);
+  max-height:min(85vh, 760px);
   background:#fff;
   border-radius:16px;
   box-shadow:0 10px 30px rgba(0,0,0,.18);
   padding:14px;
   text-align:left;
+  display:flex;
+  flex-direction:column;
 }
 .modal-head{
   display:flex;
@@ -290,6 +293,7 @@ details > summary{
   padding:6px 6px 10px;
   gap:10px;
   flex-wrap:wrap;
+  flex:0 0 auto;
 }
 .modal-title{
   font-weight:800;
@@ -308,6 +312,9 @@ details > summary{
   padding:6px 8px 10px;
   color:#222;
   line-height:1.6;
+  overflow-y:auto;
+  flex:1 1 auto;
+  min-height:0;
 }
 .help-box{
   background:#f8fbff;
@@ -324,6 +331,24 @@ details > summary{
 .help-table td,
 .help-table th{
   font-size:.95rem;
+}
+.help-actions{
+  display:flex;
+  justify-content:flex-end;
+  padding:10px 8px 4px;
+  flex:0 0 auto;
+}
+.help-exit{
+  border:none;
+  background:var(--brand);
+  color:#fff;
+  border-radius:10px;
+  padding:10px 14px;
+  cursor:pointer;
+  font-weight:700;
+}
+.help-exit:hover{
+  background:var(--brand-dark);
 }
 
 /* 모바일 */
@@ -362,37 +387,51 @@ details > summary{
       <div class="modal-title">방울토마토 권장 범위 도움말</div>
       <button class="modal-x" id="helpClose">닫기</button>
     </div>
+
     <div class="help-body">
       <div class="help-box">
-        <h3>단계별 권장값</h3>
+        <h3>생육 단계별 권장 EC / N:K</h3>
         <table class="help-table">
           <thead>
-            <tr><th>단계</th><th>권장 EC</th><th>권장 N:K</th></tr>
+            <tr><th>단계</th><th>권장 EC (mS/cm)</th><th>권장 N:K</th></tr>
           </thead>
           <tbody>
-            <tr><td>정식~활착</td><td>0.7 ~ 0.9</td><td>1 : 1.0</td></tr>
-            <tr><td>생장기</td><td>1.2 ~ 1.6</td><td>1 : 1.3 ~ 1.5</td></tr>
-            <tr><td>개화기</td><td>1.8 ~ 2.4</td><td>1 : 1.5 ~ 1.8</td></tr>
-            <tr><td>착과·비대기</td><td>2.5 ~ 3.1</td><td>1 : 2.0 ~ 2.3</td></tr>
+            <tr><td>초기(육묘·정식 직후)</td><td>0.8 ~ 1.0</td><td>1 : 1.0</td></tr>
+            <tr><td>성장기(영양생장)</td><td>1.2 ~ 1.6</td><td>1 : 1.3</td></tr>
+            <tr><td>개화기</td><td>1.6 ~ 2.2</td><td>1 : 1.8</td></tr>
+            <tr><td>착과기</td><td>2.0 ~ 2.8</td><td>1 : 2.5</td></tr>
+            <tr><td>수확기</td><td>2.5 ~ 3.2</td><td>1 : 3.0</td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="help-box">
-        <h3>입력 팁</h3>
-        - 목표 N은 보통 1로 두고, 목표 K에 비율값을 넣으면 됨. 예: N:K = 1:1.6 이면 N=1, K=1.6<br>
-        - K₂SO₄, MgSO₄·7H₂O는 10 wt% 스톡 기준 mL 출력임.<br>
-        - K가 많아질수록 Mg 결핍 위험이 커져서 K:Mg 비를 같이 보는 게 좋음.<br>
-        - 이 계산기는 절대 ppm 완전해석기가 아니라 현재 실험값 기반의 실전 보정 계산기임.
+        <h3>사용 기준</h3>
+        - 목표 N은 보통 1로 두고, 목표 K에 비율값을 넣으면 됨. 예: N:K = 1:1.8 이면 N=1, K=1.8<br>
+        - K₂SO₄, MgSO₄·7H₂O는 10 wt% 스톡 기준으로 계산됨.<br>
+        - 생육이 진행될수록 EC를 점진적으로 높이고, K 비율도 함께 높이는 방식으로 쓰면 됨.<br>
+        - 너무 이른 시기에 EC나 K를 과하게 올리면 활착 지연, 생장 저하가 날 수 있음.
+      </div>
+
+      <div class="help-box">
+        <h3>해석 팁</h3>
+        - 초기에는 낮은 EC와 낮은 K 비율이 안정적임.<br>
+        - 개화·착과 이후에는 K 비율을 높여 과실 비대와 품질을 노리는 방식이 일반적임.<br>
+        - K가 높아질수록 Mg 결핍 위험이 커질 수 있으니 K:Mg 비도 같이 보는 게 좋음.<br>
+        - 현재 계산기는 실전 보정용 계산기라서, 최종적으로는 실제 EC 측정값과 식물 반응을 같이 확인해야 함.
       </div>
 
       <div class="help-box">
         <h3>현재 계산 로직 요약</h3>
-        1. 목표 N:K 비율이 1:1보다 클수록 K 보정량을 늘림<br>
+        1. 목표 N:K 비율이 높아질수록 K 보정량을 늘림<br>
         2. K가 많으면 K:Mg 목표비 기준으로 Mg를 자동 보정함<br>
         3. K/Mg가 차지한 EC를 제외한 나머지를 AB가 채움<br>
         4. AB 2.25% Ca를 최종 ppm으로 같이 표시함
       </div>
+    </div>
+
+    <div class="help-actions">
+      <button class="help-exit" id="helpExit">나가기</button>
     </div>
   </div>
 </div>
@@ -560,23 +599,19 @@ function applyModeUI(isK){
   SafeStorage.setItem(KEY_MODE,JSON.stringify(isK));
 }
 function applyUnitUI(isML){
-  // 스위치 상태 반영
   const sw = document.getElementById("unitSwitch");
   if(sw) sw.checked = isML;
 
-  // 라벨 색상 토글
   const left = document.getElementById("unitLabelLeft");
   const right = document.getElementById("unitLabelRight");
 
   if(left) left.classList.toggle("inactive", isML);
   if(right) right.classList.toggle("inactive", !isML);
 
-  // 상태 저장
   try{
     localStorage.setItem("nutri_calc_unit_v20", JSON.stringify(isML));
   }catch(e){}
 
-  // 🔥 핵심: 단위 바뀌면 결과 다시 계산
   try{
     const isK = JSON.parse(localStorage.getItem("nutri_calc_mode_v20") || "false");
 
@@ -589,6 +624,7 @@ function applyUnitUI(isML){
     console.warn("재계산 실패:", e);
   }
 }
+
 /* ===== 저장/로드 ===== */
 function loadSimple(){
   let d=null;
@@ -635,6 +671,18 @@ function unitName(){ return isUnitML()? "mL":"µL"; }
 function toUnit(v_uL){ return isUnitML()? round1(v_uL/1000): Number(v_uL.toFixed(1)); }
 function cellVol(v_uL){ return toUnit(v_uL).toFixed(1); }
 
+function stockUnitName(){
+  return isUnitML() ? "mL" : "µL";
+}
+function stockToDisplay(v_mL){
+  return isUnitML() ? v_mL : v_mL * 1000;
+}
+function stockDisplayText(v_mL){
+  return isUnitML()
+    ? stockToDisplay(v_mL).toFixed(2)
+    : stockToDisplay(v_mL).toFixed(1);
+}
+
 /* ===== 결과 표 ===== */
 function tableSimple(ec){
   return `
@@ -659,20 +707,6 @@ function tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL){
       <tr><td>MgSO₄·7H₂O 10wt% 스톡</td><td>${stockDisplayText(mgso4_mL)}</td><td>${su}</td></tr>
     </tbody>
   </table>`;
-}
-
-function stockUnitName(){
-  return isUnitML() ? "mL" : "µL";
-}
-
-function stockToDisplay(v_mL){
-  return isUnitML() ? v_mL : v_mL * 1000;
-}
-
-function stockDisplayText(v_mL){
-  return isUnitML()
-    ? stockToDisplay(v_mL).toFixed(2)
-    : stockToDisplay(v_mL).toFixed(1);
 }
 
 /* ===== 계산(양액만) ===== */
@@ -704,10 +738,7 @@ function calcSimple(){
   saveSimple();
 }
 
-/* ===== 계산(K+Mg) =====
-   기존 경험식이 과도하게 커져서 0으로 수렴하던 문제를 피하려고
-   비율 기반 EC 배분 방식으로 안정화한 보정 로직.
-*/
+/* ===== 계산(K+Mg) ===== */
 function calcK(){
   const V = getNum("Vbatch"),
         E = getNum("ECt"),
@@ -747,35 +778,25 @@ function calcK(){
     return;
   }
 
-  // ===== 상수 =====
-  const baseNK = 0.74;                 // AB 기본 N:K = 1:0.74
-  const MG_WTFRAC_IN_AB = 0.005;       // AB 내 Mg 0.5 wt%
-  const MG_FRAC_IN_MGSO4_7H2O = 0.0986; // MgSO4·7H2O 중 Mg 질량비 약 9.86%
+  const baseNK = 0.74;
+  const MG_WTFRAC_IN_AB = 0.005;
+  const MG_FRAC_IN_MGSO4_7H2O = 0.0986;
 
-  // ===== 목표 비율 =====
   const r = tk / tn;
 
-  // ===== 계수 환산 =====
-  // AB: 100 mL 물에 A 100 µL + B 100 µL (총 200 µL) 넣었을 때 dAB 증가
-  // => 1 L 기준 총 2 mL/L
-  const aAB = dAB / 2;              // mS per (mL/L of AB total)
-
-  // K, Mg 스톡: 100 mL 물에 100 µL 넣었을 때 증가량
-  // => 1 L 기준 1 mL/L
-  const aK_mLL = dK_100uL * 10;     // mS per (mL/L stock)
-  const aMg_mLL = dMg_100uL * 10;   // mS per (mL/L stock)
+  const aAB = dAB / 2;
+  const aK_mLL = dK_100uL * 10;
+  const aMg_mLL = dMg_100uL * 10;
 
   let ecFromAB = 0;
   let ecFromK = 0;
   let ecFromMg_raw = 0;
 
   if(r <= baseNK){
-    // 목표 K/N이 AB 기본값 이하이면 추가 K, Mg 없이 AB만
     ecFromAB = E;
     ecFromK = 0;
     ecFromMg_raw = 0;
   }else{
-    // 기존 로직 유지: 추가 EC를 K/Mg 비율로 분배
     const kFrac = kMgRatio / (kMgRatio + 1);
     const mgFrac = 1 / (kMgRatio + 1);
 
@@ -791,7 +812,6 @@ function calcK(){
   ecFromK = Math.max(0, ecFromK);
   ecFromMg_raw = Math.max(0, ecFromMg_raw);
 
-  // ===== AB, K 기본 계산 =====
   const ab_mL = (ecFromAB * V) / aAB;
   const vAB_uL = ab_mL * 1000;
   const vA_uL = vAB_uL / 2;
@@ -800,23 +820,16 @@ function calcK(){
   const k2so4_mL = (ecFromK * V) / aK_mLL;
   const k2so4_g = k2so4_mL * STOCK_WTFRAC;
 
-  // ===== Mg 목표량(기존 로직 기준) -> ppm으로 환산 =====
-  // 기존 로직대로라면 필요한 MgSO4 스톡량
   const mgso4_mL_raw = (ecFromMg_raw * V) / aMg_mLL;
 
-  // 그게 공급하려던 "총 Mg ppm 목표"를 계산
-  // 기존 코드 가정 유지: 10 wt% 스톡 1 mL ≈ 용질 0.1 g
   const mgTarget_ppm =
     (mgso4_mL_raw * STOCK_WTFRAC * MG_FRAC_IN_MGSO4_7H2O * 1000) / V;
 
-  // ===== AB가 이미 공급한 Mg ppm =====
   const mgFromAB_ppm =
     (ab_mL * RHO_AB * MG_WTFRAC_IN_AB * 1000) / V;
 
-  // ===== MgSO4에서 추가로 필요한 Mg ppm =====
   const mgNeedFromStock_ppm = Math.max(0, mgTarget_ppm - mgFromAB_ppm);
 
-  // ===== 필요한 MgSO4 스톡 부피 재계산 =====
   const mg_ppm_per_mL_stock =
     (STOCK_WTFRAC * MG_FRAC_IN_MGSO4_7H2O * 1000) / V;
 
@@ -825,14 +838,11 @@ function calcK(){
 
   const mgso4_g = mgso4_mL * STOCK_WTFRAC;
 
-  // 참고용: 최종 Mg 공급량
   const mgFromStock_ppm =
     (mgso4_mL * STOCK_WTFRAC * MG_FRAC_IN_MGSO4_7H2O * 1000) / V;
 
   const mgTotal_ppm = mgFromAB_ppm + mgFromStock_ppm;
 
-  // 실제 최종 EC 추정
-  // Mg를 AB 크레딧만큼 뺐으므로, 실제 Mg EC 기여도도 줄어듦
   const ecFromMg_final = (mgso4_mL * aMg_mLL) / V;
   const totalEC = ecFromAB + ecFromK + ecFromMg_final;
 
@@ -894,7 +904,7 @@ Ca ppm (AB 2.25%, density 1.21) = ${ca_ppm.toFixed(4)}`);
 
   saveK();
 }
- 
+
 /* ===== 도움말 모달 ===== */
 function openHelp(){
   $("helpModal")?.classList.add("open");
@@ -961,8 +971,13 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
     $("btnHelp")?.addEventListener("click", openHelp);
     $("helpClose")?.addEventListener("click", closeHelp);
+    $("helpExit")?.addEventListener("click", closeHelp);
     $("helpModal")?.addEventListener("click", (e)=>{
       if(e.target === $("helpModal")) closeHelp();
+    });
+
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape") closeHelp();
     });
 
     tryRegisterSW();
