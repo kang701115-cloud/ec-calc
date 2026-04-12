@@ -557,11 +557,38 @@ const RHO_AB = 1.21;
 const STOCK_WTFRAC = 0.10;
 const CA_WTFRAC_IN_AB = 0.0225;
 
+/* ===== AB(양액) 실험 데이터 =====
+   입력: 100mL당 총 투입량(µL)
+   출력: cS/cm 표기값 (실제 mS/cm는 /10)
+*/
+const SIMPLE_EC_POINTS = [
+  { uL:  50, ec:  5.55 },
+  { uL: 100, ec:  7.95 },
+  { uL: 150, ec:  9.85 },
+  { uL: 200, ec: 12.60 },
+  { uL: 250, ec: 15.35 },
+  { uL: 300, ec: 17.35 },
+  { uL: 350, ec: 18.60 },
+  { uL: 400, ec: 19.20 },
+  { uL: 450, ec: 19.75 },
+  { uL: 500, ec: 22.90 },
+  { uL: 550, ec: 31.45 },
+  { uL: 600, ec: 39.80 },
+  { uL: 650, ec: 43.85 },
+  { uL: 700, ec: 46.85 },
+  { uL: 750, ec: 49.90 },
+  { uL: 800, ec: 52.30 },
+  { uL: 850, ec: 54.40 },
+  { uL: 900, ec: 56.45 },
+  { uL: 950, ec: 58.20 },
+  { uL:1000, ec: 60.60 }
+];
+
 /* ===== storage KEY ===== */
-const KEY_SIMPLE="nutri_calc_simple_v20";
-const KEY_KMODE ="nutri_calc_kmode_v20";
-const KEY_MODE  ="nutri_calc_mode_v20";
-const KEY_UNIT  ="nutri_calc_unit_v20";
+const KEY_SIMPLE="nutri_calc_simple_v22";
+const KEY_KMODE ="nutri_calc_kmode_v22";
+const KEY_MODE  ="nutri_calc_mode_v22";
+const KEY_UNIT  ="nutri_calc_unit_v22";
 
 /* ===== DOM 유틸 ===== */
 function $(id){ return document.getElementById(id); }
@@ -609,11 +636,11 @@ function applyUnitUI(isML){
   if(right) right.classList.toggle("inactive", !isML);
 
   try{
-    localStorage.setItem("nutri_calc_unit_v20", JSON.stringify(isML));
+    localStorage.setItem("nutri_calc_unit_v22", JSON.stringify(isML));
   }catch(e){}
 
   try{
-    const isK = JSON.parse(localStorage.getItem("nutri_calc_mode_v20") || "false");
+    const isK = JSON.parse(localStorage.getItem("nutri_calc_mode_v22") || "false");
 
     if(isK){
       if(typeof calcK === "function") calcK();
@@ -683,6 +710,74 @@ function stockDisplayText(v_mL){
     : stockToDisplay(v_mL).toFixed(1);
 }
 
+/* ===== AB 실험 기반 보간 함수 ===== */
+function interpolateABcS(uL_per_100mL){
+  const pts = SIMPLE_EC_POINTS;
+
+  if (!Number.isFinite(uL_per_100mL) || uL_per_100mL < 0) return NaN;
+  if (uL_per_100mL === 0) return 0;
+
+  if (uL_per_100mL <= pts[0].uL){
+    const x1 = 0, y1 = 0;
+    const x2 = pts[0].uL, y2 = pts[0].ec;
+    return y1 + ((uL_per_100mL - x1) * (y2 - y1)) / (x2 - x1);
+  }
+
+  for(let i=0; i<pts.length-1; i++){
+    const p1 = pts[i];
+    const p2 = pts[i+1];
+    if (uL_per_100mL >= p1.uL && uL_per_100mL <= p2.uL){
+      return p1.ec + ((uL_per_100mL - p1.uL) * (p2.ec - p1.ec)) / (p2.uL - p1.uL);
+    }
+  }
+
+  const last1 = pts[pts.length - 2];
+  const last2 = pts[pts.length - 1];
+  return last2.ec + ((uL_per_100mL - last2.uL) * (last2.ec - last1.ec)) / (last2.uL - last1.uL);
+}
+
+function calcABmSFromDose(Vsolvent_mL, totalDose_uL){
+  const uL_per_100mL = totalDose_uL * (100 / Vsolvent_mL);
+  const ec_cS = interpolateABcS(uL_per_100mL);
+  return {
+    uL_per_100mL,
+    ec_cS,
+    ec_mS: ec_cS / 10
+  };
+}
+
+/* 목표 AB EC 증가량(mS/cm)에 대해 필요한 총 AB 용질량(µL) 역산 */
+function calcABDoseFromTargetECmS(Vsolvent_mL, targetEC_mS){
+  if (!Number.isFinite(Vsolvent_mL) || Vsolvent_mL <= 0) return NaN;
+  if (!Number.isFinite(targetEC_mS) || targetEC_mS < 0) return NaN;
+  if (targetEC_mS === 0) return 0;
+
+  const target_cS = targetEC_mS * 10;
+  const pts = SIMPLE_EC_POINTS;
+
+  if (target_cS <= pts[0].ec){
+    const ratio = target_cS / pts[0].ec;
+    const uL_per_100mL = pts[0].uL * ratio;
+    return uL_per_100mL * (Vsolvent_mL / 100);
+  }
+
+  for(let i=0; i<pts.length-1; i++){
+    const p1 = pts[i];
+    const p2 = pts[i+1];
+    if (target_cS >= p1.ec && target_cS <= p2.ec){
+      const uL_per_100mL = p1.uL + ((target_cS - p1.ec) * (p2.uL - p1.uL)) / (p2.ec - p1.ec);
+      return uL_per_100mL * (Vsolvent_mL / 100);
+    }
+  }
+
+  const last1 = pts[pts.length - 2];
+  const last2 = pts[pts.length - 1];
+  const uL_per_100mL =
+    last2.uL + ((target_cS - last2.ec) * (last2.uL - last1.uL)) / (last2.ec - last1.ec);
+
+  return uL_per_100mL * (Vsolvent_mL / 100);
+}
+
 /* ===== 결과 표 ===== */
 function tableSimple(ec){
   return `
@@ -711,7 +806,7 @@ function tableK(vA_uL, vB_uL, k2so4_mL, mgso4_mL){
 
 /* ===== 계산(양액만) ===== */
 function calcSimple(){
-  const coef = getNum("coefS");
+  const coef = getNum("coefS"); // UI 유지용. 실제 계산에는 사용 안 함.
   const Vsolvent = getNum("VsolventS");
   const Vsolute = getNum("VsoluteS");
 
@@ -727,13 +822,16 @@ function calcSimple(){
     return;
   }
 
-  const ec = coef * (Vsolute / Vsolvent);
+  const model = calcABmSFromDose(Vsolvent, Vsolute);
+  const ec = model.ec_mS;
 
   setHTML("resultS", tableSimple(ec));
   setText("metaS",
-`보정계수 = ${coef.toFixed(3)} mS/cm
-입력 기준 = 100 mL 물에 100 µL 투입
-현재 조건 = ${Vsolvent.toFixed(1)} mL 용매 + ${Vsolute.toFixed(1)} µL 용질`);
+`계산 방식 = 실험 데이터 기반 구간별 선형보간
+입력 기준 환산 = 100 mL당 ${model.uL_per_100mL.toFixed(1)} µL
+내부 계산값 = ${model.ec_cS.toFixed(2)} cS/cm = ${ec.toFixed(3)} mS/cm
+현재 조건 = ${Vsolvent.toFixed(1)} mL 용매 + ${Vsolute.toFixed(1)} µL 용질
+참고 = 보정계수 입력칸은 UI 유지용으로 남겨두었고, 실제 EC 계산에는 사용하지 않음`);
 
   saveSimple();
 }
@@ -742,7 +840,7 @@ function calcSimple(){
 function calcK(){
   const V = getNum("Vbatch"),
         E = getNum("ECt"),
-        dAB = getNum("dE_AB_1mLTotal_100mL"),
+        dAB = getNum("dE_AB_1mLTotal_100mL"), // UI 유지용. 실제 AB 계산에는 사용 안 함.
         tk = getNum("tK"),
         tn = getNum("tN"),
         dK_100uL = getNum("dE_Kstock_100uL_100mL"),
@@ -773,7 +871,7 @@ function calcK(){
     setHTML("result", "K:Mg 비율 0 불가");
     return;
   }
-  if(dAB === 0 || dK_100uL === 0 || dMg_100uL === 0){
+  if(dK_100uL === 0 || dMg_100uL === 0){
     setHTML("result", "EC증분 0 불가");
     return;
   }
@@ -784,7 +882,6 @@ function calcK(){
 
   const r = tk / tn;
 
-  const aAB = dAB / 2;
   const aK_mLL = dK_100uL * 10;
   const aMg_mLL = dMg_100uL * 10;
 
@@ -812,11 +909,15 @@ function calcK(){
   ecFromK = Math.max(0, ecFromK);
   ecFromMg_raw = Math.max(0, ecFromMg_raw);
 
-  const ab_mL = (ecFromAB * V) / aAB;
+  // ===== AB만 실험 데이터 기반 역산 =====
+  const ab_uL = calcABDoseFromTargetECmS(V * 1000, ecFromAB);
+  const ab_mL = ab_uL / 1000;
+
   const vAB_uL = ab_mL * 1000;
   const vA_uL = vAB_uL / 2;
   const vB_uL = vAB_uL / 2;
 
+  // ===== K, Mg는 기존 선형 유지 =====
   const k2so4_mL = (ecFromK * V) / aK_mLL;
   const k2so4_g = k2so4_mL * STOCK_WTFRAC;
 
@@ -860,6 +961,8 @@ function calcK(){
     warn += `AB 안의 Mg만으로 목표 Mg를 이미 충족해서 MgSO₄ 추가량을 0으로 처리함\n`;
   }
 
+  const abModel = calcABmSFromDose(V * 1000, vAB_uL);
+
   setText("meta",
 `추정 총 EC = ${totalEC.toFixed(3)} mS/cm
 AB가 담당한 EC = ${ecFromAB.toFixed(3)}
@@ -876,7 +979,10 @@ ${warn}`.trim());
 `r = tK/tN = ${r.toFixed(6)}
 baseNK = ${baseNK.toFixed(6)}
 
-aAB = ${aAB.toFixed(6)} [mS per (mL/L)]
+AB 계산 방식 = 실험 데이터 기반 구간별 선형보간
+AB 환산 입력 = 100mL당 ${abModel.uL_per_100mL.toFixed(3)} µL
+AB 내부 계산값 = ${abModel.ec_cS.toFixed(6)} cS/cm = ${abModel.ec_mS.toFixed(6)} mS/cm
+
 aK = ${aK_mLL.toFixed(6)} [mS per (mL/L stock)]
 aMg = ${aMg_mLL.toFixed(6)} [mS per (mL/L stock)]
 
