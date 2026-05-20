@@ -562,26 +562,27 @@ const CA_WTFRAC_IN_AB = 0.0225;
    출력: cS/cm 표기값 (실제 mS/cm는 /10)
 */
 const SIMPLE_EC_POINTS = [
-  { uL:  50, ec:  5.55 },
-  { uL: 100, ec:  7.95 },
-  { uL: 150, ec:  9.85 },
-  { uL: 200, ec: 12.60 },
-  { uL: 250, ec: 15.35 },
-  { uL: 300, ec: 17.35 },
-  { uL: 350, ec: 18.60 },
-  { uL: 400, ec: 19.20 },
-  { uL: 450, ec: 19.75 },
-  { uL: 500, ec: 22.90 },
-  { uL: 550, ec: 31.45 },
-  { uL: 600, ec: 39.80 },
-  { uL: 650, ec: 43.85 },
-  { uL: 700, ec: 46.85 },
-  { uL: 750, ec: 49.90 },
-  { uL: 800, ec: 52.30 },
-  { uL: 850, ec: 54.40 },
-  { uL: 900, ec: 56.45 },
-  { uL: 950, ec: 58.20 },
-  { uL:1000, ec: 60.60 }
+  { uL: 110, ec: 1.270 },
+  { uL: 120, ec: 1.365 },
+  { uL: 130, ec: 1.470 },
+  { uL: 140, ec: 1.575 },
+  { uL: 150, ec: 1.655 },
+  { uL: 160, ec: 1.720 },
+  { uL: 170, ec: 1.780 },
+  { uL: 180, ec: 1.820 },
+  { uL: 190, ec: 1.850 },
+  { uL: 200, ec: 1.885 },
+  { uL: 210, ec: 1.910 },
+  { uL: 220, ec: 1.930 },
+  { uL: 230, ec: 1.955 },
+  { uL: 240, ec: 1.975 },
+  { uL: 250, ec: 2.025 },
+  { uL: 260, ec: 2.100 },
+  { uL: 270, ec: 2.500 },
+  { uL: 280, ec: 2.880 },
+  { uL: 290, ec: 3.265 },
+  { uL: 300, ec: 3.660 },
+  { uL: 310, ec: 3.985 }
 ];
 
 /* ===== storage KEY ===== */
@@ -717,32 +718,36 @@ function interpolateABcS(uL_per_100mL){
   if (!Number.isFinite(uL_per_100mL) || uL_per_100mL < 0) return NaN;
   if (uL_per_100mL === 0) return 0;
 
-  if (uL_per_100mL <= pts[0].uL){
-    const x1 = 0, y1 = 0;
-    const x2 = pts[0].uL, y2 = pts[0].ec;
-    return y1 + ((uL_per_100mL - x1) * (y2 - y1)) / (x2 - x1);
+  // 실험값보다 낮은 구간:
+  // 0.5mL/5L = 10µL/100mL당 0.1mS/cm 증가
+  if (uL_per_100mL < pts[0].uL){
+    const slope = 0.1 / 10; // 1µL당 0.01mS/cm
+    return Math.max(0, pts[0].ec - ((pts[0].uL - uL_per_100mL) * slope));
   }
 
   for(let i=0; i<pts.length-1; i++){
     const p1 = pts[i];
     const p2 = pts[i+1];
+
     if (uL_per_100mL >= p1.uL && uL_per_100mL <= p2.uL){
       return p1.ec + ((uL_per_100mL - p1.uL) * (p2.ec - p1.ec)) / (p2.uL - p1.uL);
     }
   }
 
+  // 실험값보다 높은 구간은 마지막 두 점 기울기로 외삽
   const last1 = pts[pts.length - 2];
   const last2 = pts[pts.length - 1];
+
   return last2.ec + ((uL_per_100mL - last2.uL) * (last2.ec - last1.ec)) / (last2.uL - last1.uL);
 }
-
 function calcABmSFromDose(Vsolvent_mL, totalDose_uL){
   const uL_per_100mL = totalDose_uL * (100 / Vsolvent_mL);
-  const ec_cS = interpolateABcS(uL_per_100mL);
+  const ec_mS = interpolateABcS(uL_per_100mL);
+
   return {
     uL_per_100mL,
-    ec_cS,
-    ec_mS: ec_cS / 10
+    ec_cS: ec_mS,
+    ec_mS: ec_mS
   };
 }
 
@@ -752,28 +757,34 @@ function calcABDoseFromTargetECmS(Vsolvent_mL, targetEC_mS){
   if (!Number.isFinite(targetEC_mS) || targetEC_mS < 0) return NaN;
   if (targetEC_mS === 0) return 0;
 
-  const target_cS = targetEC_mS * 10;
+  const target = targetEC_mS;
   const pts = SIMPLE_EC_POINTS;
 
-  if (target_cS <= pts[0].ec){
-    const ratio = target_cS / pts[0].ec;
-    const uL_per_100mL = pts[0].uL * ratio;
-    return uL_per_100mL * (Vsolvent_mL / 100);
+  // 실험값보다 낮은 EC는 10µL당 0.1mS/cm 선형모델로 역산
+  if (target < pts[0].ec){
+    const slope = 0.1 / 10; // 1µL당 0.01mS/cm
+    const uL_per_100mL = pts[0].uL - ((pts[0].ec - target) / slope);
+    return Math.max(0, uL_per_100mL) * (Vsolvent_mL / 100);
   }
 
   for(let i=0; i<pts.length-1; i++){
     const p1 = pts[i];
     const p2 = pts[i+1];
-    if (target_cS >= p1.ec && target_cS <= p2.ec){
-      const uL_per_100mL = p1.uL + ((target_cS - p1.ec) * (p2.uL - p1.uL)) / (p2.ec - p1.ec);
+
+    if (target >= p1.ec && target <= p2.ec){
+      const uL_per_100mL =
+        p1.uL + ((target - p1.ec) * (p2.uL - p1.uL)) / (p2.ec - p1.ec);
+
       return uL_per_100mL * (Vsolvent_mL / 100);
     }
   }
 
+  // 실험값보다 높은 EC는 마지막 두 점 기울기로 외삽
   const last1 = pts[pts.length - 2];
   const last2 = pts[pts.length - 1];
+
   const uL_per_100mL =
-    last2.uL + ((target_cS - last2.ec) * (last2.uL - last1.uL)) / (last2.ec - last1.ec);
+    last2.uL + ((target - last2.ec) * (last2.uL - last1.uL)) / (last2.ec - last1.ec);
 
   return uL_per_100mL * (Vsolvent_mL / 100);
 }
